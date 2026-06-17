@@ -1,10 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Identity.Domain.Entities;
 
-namespace Identity.Application.Interfaces
+namespace Identity.Application.Interfaces;
+
+public interface IJwtTokenGenerator
 {
-    public interface IJwtTokenGenerator
-    {
-        string GenerateToken(User user, IEnumerable<string> roles);
-    }
+    string GenerateAuthenticationToken(User user, IEnumerable<string> roles, Guid? restaurantId = null);
 }

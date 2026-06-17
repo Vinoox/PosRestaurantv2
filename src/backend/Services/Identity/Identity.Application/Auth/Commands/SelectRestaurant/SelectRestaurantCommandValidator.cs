@@ -6,9 +6,8 @@ namespace Identity.Application.Auth.Commands.SelectRestaurant
     {
         public SelectRestaurantCommandValidator()
         {
-            RuleFor(command => command.RestaurantId)
-                .NotEmpty().WithMessage("Id restauracji jest wymagane.")
-                .GreaterThan(0).WithMessage("Niepoprawne Id restauracji.");
+            RuleFor(x => x.RestaurantId)
+            .NotEmpty().WithMessage("Identyfikator restauracji jest wymagany i nie może być pusty.");
         }
     }
 }
