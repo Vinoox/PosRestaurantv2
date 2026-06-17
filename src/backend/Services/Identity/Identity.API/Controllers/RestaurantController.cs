@@ -2,10 +2,12 @@
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Identity.Application.Restaurants.Commands.AddEmployee;
+using Identity.Application.Restaurants.Commands.ChangeEmployeeRole;
 using Identity.Application.Restaurants.Commands.CreateRestaurantRole;
 using Identity.Application.Restaurants.Commands.DeactivateRestaurant;
 using Identity.Application.Restaurants.Commands.DeleteRestaurantRole;
 using Identity.Application.Restaurants.Commands.RegisterRestaurant;
+using Identity.Application.Restaurants.Commands.RemoveEmployee;
 using Identity.Application.Restaurants.Commands.RenameRestaurantRole;
 using Identity.Application.Restaurants.Commands.UpdateRestaurantDetails;
 using Identity.Application.Restaurants.Queries.GetEmployees;
@@ -186,6 +188,34 @@ namespace Identity.API.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var command = new DeleteRestaurantRoleCommand(restaurantId, roleId, Guid.Parse(userId!));
+
+            await _mediator.Send(command);
+            return NoContent();
+        }
+
+        [HttpPut("{restaurantId:guid}/employees/{employeeId:guid}/role")]
+        [SwaggerOperation(Summary = "Zmiana roli pracownika (Wymaga uprawnień Managera)")]
+        public async Task<IActionResult> ChangeEmployeeRole(
+        [FromRoute] Guid restaurantId,
+        [FromRoute] Guid employeeId,
+        [FromBody] ChangeEmployeeRoleCommand command)
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                command.RestaurantId = restaurantId;
+                command.EmployeeId = employeeId;
+                command.RequesterId = Guid.Parse(userId!);
+
+                await _mediator.Send(command);
+                return NoContent();
+            }
+
+        [HttpDelete("{restaurantId:guid}/employees/{employeeId:guid}")]
+        [SwaggerOperation(Summary = "Zwolnienie pracownika z restauracji (Wymaga uprawnień Managera)")]
+        public async Task<IActionResult> RemoveEmployee([FromRoute] Guid restaurantId, [FromRoute] Guid employeeId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var command = new RemoveEmployeeCommand(restaurantId, employeeId, Guid.Parse(userId!));
 
             await _mediator.Send(command);
             return NoContent();

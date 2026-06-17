@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Identity.Domain.Constants;
 
 namespace Identity.Application.Auth.Commands.RegisterUser
 {
@@ -27,6 +28,10 @@ namespace Identity.Application.Auth.Commands.RegisterUser
             RuleFor(command => command.ConfirmPassword)
                 .NotEmpty().WithMessage("Potwierdzenie hasła jest wymagane.")
                 .Equal(command => command.Password).WithMessage("Podane hasła muszą być takie same.");
+
+            RuleFor(x => x.Role)
+                .Must(role => GlobalRoles.GetAll().Contains(role, StringComparer.OrdinalIgnoreCase))
+                .WithMessage($"Podana rola jest nieprawidłowa. Dostępne role to: {string.Join(", ", GlobalRoles.GetAll())}");
         }
     }
 }

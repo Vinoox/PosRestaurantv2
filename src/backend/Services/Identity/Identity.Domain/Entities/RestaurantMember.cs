@@ -25,5 +25,13 @@ namespace Identity.Domain.Entities
                 RestaurantRole = role
             };
         }
+
+        public void ChangeRole(Guid newRoleId)
+        {
+            if (newRoleId == Guid.Empty)
+                throw new ArgumentException("Identyfikator nowej roli nie może być pusty.");
+
+            RestaurantRoleId = newRoleId;
+        }
     }
 }

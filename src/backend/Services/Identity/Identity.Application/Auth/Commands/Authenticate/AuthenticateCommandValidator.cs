@@ -6,11 +6,11 @@ namespace Identity.Application.Auth.Commands.Authenticate
     {
         public AuthenticateCommandValidator()
         {
-            RuleFor(command => command.Email)
-                .NotEmpty().WithMessage("Email jest wymagany.")
+            RuleFor(x => x.Email)
+                .NotEmpty().WithMessage("Adres email jest wymagany.")
                 .EmailAddress().WithMessage("Niepoprawny format adresu email.");
 
-            RuleFor(command => command.Password)
+            RuleFor(x => x.Password)
                 .NotEmpty().WithMessage("Hasło jest wymagane.");
         }
     }

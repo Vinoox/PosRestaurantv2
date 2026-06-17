@@ -8,6 +8,17 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Identity.API.Controllers
 {
+    public class RegisterRequest
+    {
+        public required string FirstName { get; set; }
+        public required string LastName { get; set; }
+        public required string Email { get; set; }
+        public required string Password { get; set; }
+        public required string ConfirmPassword { get; set; }
+
+        public string Role { get; set; } = "Default";
+    }
+
     [ApiController]
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
@@ -21,9 +32,19 @@ namespace Identity.API.Controllers
 
         [HttpPost("register")]
         [AllowAnonymous]
-        [SwaggerOperation(Summary = "Rejestracja nowego użytkownika")]
-        public async Task<IActionResult> Register([FromBody] RegisterUserCommand command)
+        [SwaggerOperation(Summary = "Rejestracja nowego użytkownika z możliwością wyboru ról (Admin, Premium, Default)")]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
+            var command = new RegisterUserCommand
+            {
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Email = request.Email,
+                Password = request.Password,
+                ConfirmPassword = request.ConfirmPassword,
+                Role = request.Role
+            };
+
             await _mediator.Send(command);
             return Ok();
         }

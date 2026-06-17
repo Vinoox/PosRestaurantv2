@@ -9,5 +9,9 @@ namespace Identity.Application.Auth.Commands.RegisterUser
         public required string Email { get; set; }
         public required string Password { get; set; }
         public required string ConfirmPassword { get; set; }
+
+
+        // DEV TEST 
+        public string Role { get; set; } = "Default";
     }
 }
