@@ -1,12 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using FluentValidation;
 
 namespace Identity.Application.Users.Commands.UpdateUserProfile
 {
-    internal class UpdateUserProfileCommandValidator
+    public class UpdateUserProfileCommandValidator : AbstractValidator<UpdateUserProfileCommand>
     {
+        public UpdateUserProfileCommandValidator()
+        {
+            RuleFor(x => x.FirstName)
+                .NotEmpty().WithMessage("Imię nie może być puste.");
+
+            RuleFor(x => x.LastName)
+                .NotEmpty().WithMessage("Nazwisko nie może być puste.");
+        }
     }
 }

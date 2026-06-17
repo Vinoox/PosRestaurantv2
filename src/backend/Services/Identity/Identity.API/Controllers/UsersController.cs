@@ -29,7 +29,8 @@ namespace Identity.API.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            var query = new GetUserQuery { UserId = Guid.Parse(userId!) };
+            var query = new GetUserQuery(Guid.Parse(userId!));
+
             var user = await _mediator.Send(query);
 
             return Ok(user);
@@ -53,6 +54,7 @@ namespace Identity.API.Controllers
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordCommand command)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
             command.UserId = Guid.Parse(userId!);
 
             await _mediator.Send(command);

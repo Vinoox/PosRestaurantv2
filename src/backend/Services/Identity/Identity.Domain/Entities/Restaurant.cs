@@ -12,24 +12,38 @@ namespace Identity.Domain.Entities
         public bool IsActive { get; private set; }
 
         private Restaurant() { }
-
-        public static Restaurant Create(string name)
+        public static Restaurant Create(string name, string? address = null, string? taxId = null)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new DomainException("Nazwa restauracji nie może być pusta.");
 
             return new Restaurant
             {
-                Id = Guid.NewGuid(),
                 Name = name.Trim(),
+                Address = address?.Trim(),
+                TaxId = taxId?.Trim(),
                 IsActive = true
             };
         }
 
-        public void UpdateDetails(string name, string address)
+        public void UpdateDetails(string name, string? address, string? taxId)
         {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new DomainException("Nazwa restauracji nie może być pusta.");
+
             Name = name.Trim();
-            Address = address;
+            Address = address?.Trim();
+            TaxId = taxId?.Trim();
+        }
+
+        public void Deactivate()
+        {
+            IsActive = false;
+        }
+
+        public void Activate()
+        {
+            IsActive = true;
         }
     }
 }

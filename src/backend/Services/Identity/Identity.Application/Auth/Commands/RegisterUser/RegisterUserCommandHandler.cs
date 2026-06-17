@@ -1,11 +1,11 @@
-﻿using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using FluentValidation;
+﻿using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using MassTransit;
 using Identity.Domain.Entities;
+using Identity.Domain.Constants;
 using PosRestaurant.Shared.Exceptions;
+using PosRestaurant.Shared.Messaging.Events;
 
 namespace Identity.Application.Auth.Commands.RegisterUser
 {
@@ -13,11 +13,16 @@ namespace Identity.Application.Auth.Commands.RegisterUser
     {
         private readonly UserManager<User> _userManager;
         private readonly IValidator<RegisterUserCommand> _validator;
+        private readonly IPublishEndpoint _publishEndpoint;
 
-        public RegisterUserCommandHandler(UserManager<User> userManager, IValidator<RegisterUserCommand> validator)
+        public RegisterUserCommandHandler(
+            UserManager<User> userManager,
+            IValidator<RegisterUserCommand> validator,
+            IPublishEndpoint publishEndpoint)
         {
             _userManager = userManager;
             _validator = validator;
+            _publishEndpoint = publishEndpoint;
         }
 
         public async Task<Unit> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
@@ -36,7 +41,22 @@ namespace Identity.Application.Auth.Commands.RegisterUser
                 throw new BadRequestException("Błąd rejestracji: " + string.Join(", ", result.Errors.Select(e => e.Description)));
             }
 
-            await _userManager.AddToRoleAsync(user, "Default");
+            var roleToAssign = GlobalRoles.GetAll()
+                .FirstOrDefault(r => string.Equals(r, request.Role, StringComparison.OrdinalIgnoreCase))
+                ?? GlobalRoles.Default;
+
+            await _userManager.AddToRoleAsync(user, roleToAssign);
+
+            var integrationEvent = new UserRegisteredIntegrationEvent
+            {
+                UserId = user.Id,
+                Email = user.Email!,
+                FirstName = user.FirstName,
+                LastName = user.LastName
+            };
+
+            await _publishEndpoint.Publish(integrationEvent, cancellationToken);
+
             return Unit.Value;
         }
     }

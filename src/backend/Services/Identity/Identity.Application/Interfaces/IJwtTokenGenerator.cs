@@ -5,6 +5,6 @@ namespace Identity.Application.Interfaces
 {
     public interface IJwtTokenGenerator
     {
-        string GenerateAuthenticationToken(User user, IEnumerable<string> roles);
+        string GenerateToken(User user, IEnumerable<string> roles);
     }
 }

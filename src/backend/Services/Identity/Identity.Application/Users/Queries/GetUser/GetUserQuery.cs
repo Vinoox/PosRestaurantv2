@@ -3,8 +3,5 @@ using MediatR;
 
 namespace Identity.Application.Users.Queries.GetUser
 {
-    public class GetUserQuery : IRequest<UserDto>
-    {
-        public Guid UserId { get; set; }
-    }
+    public record GetUserQuery(Guid UserId) : IRequest<UserDto>;
 }

@@ -1,38 +1,51 @@
-﻿using Identity.Application.Auth.Commands.Authenticate;
-using Identity.Application.Auth.Queries;
-using Identity.Application.Common.Extensions;
+﻿using System.Threading;
+using System.Threading.Tasks;
+using FluentValidation;
 using Identity.Application.Interfaces;
 using Identity.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using PosRestaurant.Shared.Exceptions;
 
-namespace Identity.Application.Auth.Commands.Authenticate;
-
-public class AuthenticateCommandHandler : IRequestHandler<AuthenticateCommand, AuthenticationResultDto>
+namespace Identity.Application.Auth.Commands.Authenticate
 {
-    private readonly UserManager<User> _userManager;
-    private readonly IJwtTokenGenerator _jwtTokenGenerator;
-
-    public AuthenticateCommandHandler(
-        UserManager<User> userManager,
-        IJwtTokenGenerator jwtTokenGenerator)
+    public class AuthenticateCommandHandler : IRequestHandler<AuthenticateCommand, string>
     {
-        _userManager = userManager;
-        _jwtTokenGenerator = jwtTokenGenerator;
-    }
+        private readonly UserManager<User> _userManager;
+        private readonly IValidator<AuthenticateCommand> _validator;
+        private readonly IJwtTokenGenerator _jwtTokenGenerator;
 
-    public async Task<AuthenticationResultDto> Handle(AuthenticateCommand request, CancellationToken cancellationToken)
-    {
-        var user = await _userManager.FindByEmailOrThrowAsync(request.Email);
-
-        var globalRoles = await _userManager.GetRolesAsync(user);
-
-        var authToken = _jwtTokenGenerator.GenerateAuthenticationToken(user, globalRoles);
-
-        return new AuthenticationResultDto
+        public AuthenticateCommandHandler(
+            UserManager<User> userManager,
+            IValidator<AuthenticateCommand> validator,
+            IJwtTokenGenerator jwtTokenGenerator)
         {
-            UserId = user.Id,
-            AuthenticationToken = authToken
-        };
+            _userManager = userManager;
+            _validator = validator;
+            _jwtTokenGenerator = jwtTokenGenerator;
+        }
+
+        public async Task<string> Handle(AuthenticateCommand request, CancellationToken cancellationToken)
+        {
+            await _validator.ValidateAndThrowAsync(request, cancellationToken);
+
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user == null)
+            {
+                throw new BadRequestException("Nieprawidłowy email lub hasło.");
+            }
+
+            var isPasswordValid = await _userManager.CheckPasswordAsync(user, request.Password);
+            if (!isPasswordValid)
+            {
+                throw new BadRequestException("Nieprawidłowy email lub hasło.");
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            var token = _jwtTokenGenerator.GenerateToken(user, roles);
+
+            return token;
+        }
     }
 }
