@@ -7,6 +7,8 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.28" />
+		<PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.4" />
+		<PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="8.1.4" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -15,7 +17,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Controllers\" />
 	  <Folder Include="Infrastructrure\" />
 	</ItemGroup>
 </Project>

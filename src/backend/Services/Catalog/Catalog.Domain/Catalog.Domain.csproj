@@ -8,8 +8,4 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\..\BuildingBlocks\PosRestaurant.Shared\PosRestaurant.Shared.csproj" />
 	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Entities\" />
-	</ItemGroup>
 </Project>
