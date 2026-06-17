@@ -1,10 +1,10 @@
-﻿using Identity.Application.Auth.Commands.Authenticate;
-using Identity.Application.Auth.Queries;
-using Identity.Application.Common.Extensions;
+﻿using Identity.Application.Common.Extensions;
 using Identity.Application.Interfaces;
 using Identity.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Identity.Application.Auth.Commands.Authenticate;
 
@@ -31,7 +31,7 @@ public class AuthenticateCommandHandler : IRequestHandler<AuthenticateCommand, A
 
         return new AuthenticationResultDto
         {
-            UserId = user.Id,
+            UserId = user.Id.ToString(),
             AuthenticationToken = authToken
         };
     }

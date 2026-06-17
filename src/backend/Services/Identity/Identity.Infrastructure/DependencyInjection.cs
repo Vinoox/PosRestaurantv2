@@ -1,6 +1,8 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,6 +10,7 @@ using Microsoft.IdentityModel.Tokens;
 using Identity.Infrastructure.Data;
 using Identity.Infrastructure.Services;
 using Identity.Application.Interfaces;
+using Identity.Domain.Entities;
 
 namespace Identity.Infrastructure;
 
@@ -17,8 +20,23 @@ public static class DependencyInjection
     {
         services.AddDbContext<IdentityDbContext>(options =>
             options.UseSqlServer(
-                configuration.GetConnectionString("DefaultConnection"),
+                configuration.GetConnectionString("IdentityConnection"),
                 b => b.MigrationsAssembly(typeof(IdentityDbContext).Assembly.FullName)));
+
+        services.AddScoped<IIdentityDbContext>(provider => provider.GetRequiredService<IdentityDbContext>());
+
+        services.AddIdentityCore<User>(options =>
+        {
+            options.Password.RequireDigit = true;
+            options.Password.RequireLowercase = true;
+            options.Password.RequireNonAlphanumeric = true;
+            options.Password.RequireUppercase = true;
+            options.Password.RequiredLength = 8;
+            options.User.RequireUniqueEmail = true;
+        })
+        .AddRoles<IdentityRole<Guid>>()
+        .AddEntityFrameworkStores<IdentityDbContext>()
+        .AddDefaultTokenProviders();
 
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 

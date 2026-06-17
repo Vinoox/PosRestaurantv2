@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using PosRestaurant.Shared.Exceptions;
+using System;
 
 namespace Identity.Domain.Entities
 {
@@ -7,7 +8,10 @@ namespace Identity.Domain.Entities
     {
         public string FirstName { get; private set; } = null!;
         public string LastName { get; private set; } = null!;
-        public string PinHash { get; private set; } = null!;
+        public DateTime CreatedAt { get; set; }
+        public string? CreatedBy { get; set; }
+        public DateTime? LastModifiedAt { get; set; }
+        public string? LastModifiedBy { get; set; }
 
         private User() { }
 
@@ -24,10 +28,12 @@ namespace Identity.Domain.Entities
 
             return new User
             {
+                Id = Guid.NewGuid(),
                 FirstName = NormalizeString(firstName),
                 LastName = NormalizeString(lastName),
                 Email = email.ToLower().Trim(),
-                UserName = email.ToLower().Trim()
+                UserName = email.ToLower().Trim(),
+                CreatedAt = DateTime.UtcNow
             };
         }
 
@@ -47,20 +53,13 @@ namespace Identity.Domain.Entities
             LastName = NormalizeString(newLastName);
         }
 
-        public void SetPinHash(string newPinHash)
-        {
-            if (string.IsNullOrWhiteSpace(newPinHash))
-                throw new DomainException("PIN nie może być pusty");
-
-            PinHash = newPinHash;
-        }
-
         private static string NormalizeString(string value)
         {
             var trimmed = value.Trim();
             if (trimmed.Length == 0) return string.Empty;
             if (trimmed.Length == 1) return trimmed.ToUpper();
-            return char.ToUpper(value[0]) + value.Substring(1).ToLower();
+
+            return char.ToUpper(trimmed[0]) + trimmed.Substring(1).ToLower();
         }
     }
 }

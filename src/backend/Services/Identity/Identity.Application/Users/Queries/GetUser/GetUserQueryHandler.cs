@@ -1,8 +1,8 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using Identity.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Identity.Domain.Entities;
 using PosRestaurant.Shared.Exceptions;
 
 namespace Identity.Application.Users.Queries.GetUser
@@ -18,15 +18,13 @@ namespace Identity.Application.Users.Queries.GetUser
 
         public async Task<UserDto> Handle(GetUserQuery request, CancellationToken cancellationToken)
         {
-            var user = await _userManager.FindByIdAsync(request.UserId.ToString());
-
-            if (user == null)
-                throw new NotFoundException("User", request.UserId);
+            var user = await _userManager.FindByIdAsync(request.UserId.ToString())
+                ?? throw new NotFoundException("Użytkownik", request.UserId);
 
             return new UserDto
             {
                 Id = user.Id,
-                Email = user.Email,
+                Email = user.Email!,
                 FirstName = user.FirstName,
                 LastName = user.LastName
             };

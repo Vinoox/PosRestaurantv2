@@ -4,8 +4,10 @@ using System.Threading.Tasks;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using MassTransit;
 using Identity.Domain.Entities;
 using PosRestaurant.Shared.Exceptions;
+using PosRestaurant.Shared.Messaging.Events;
 
 namespace Identity.Application.Auth.Commands.RegisterUser
 {
@@ -13,11 +15,16 @@ namespace Identity.Application.Auth.Commands.RegisterUser
     {
         private readonly UserManager<User> _userManager;
         private readonly IValidator<RegisterUserCommand> _validator;
+        private readonly IPublishEndpoint _publishEndpoint;
 
-        public RegisterUserCommandHandler(UserManager<User> userManager, IValidator<RegisterUserCommand> validator)
+        public RegisterUserCommandHandler(
+            UserManager<User> userManager,
+            IValidator<RegisterUserCommand> validator,
+            IPublishEndpoint publishEndpoint)
         {
             _userManager = userManager;
             _validator = validator;
+            _publishEndpoint = publishEndpoint;
         }
 
         public async Task<Unit> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
@@ -37,6 +44,17 @@ namespace Identity.Application.Auth.Commands.RegisterUser
             }
 
             await _userManager.AddToRoleAsync(user, "Default");
+
+            var integrationEvent = new UserRegisteredIntegrationEvent
+            {
+                UserId = user.Id,
+                Email = user.Email!,
+                FirstName = user.FirstName,
+                LastName = user.LastName
+            };
+
+            await _publishEndpoint.Publish(integrationEvent, cancellationToken);
+
             return Unit.Value;
         }
     }

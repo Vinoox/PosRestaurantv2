@@ -19,7 +19,7 @@ namespace Identity.Infrastructure.Services
             _configuration = configuration;
         }
 
-        public string GenerateAuthenticationToken(User user, IList<string> roles)
+        public string GenerateAuthenticationToken(User user, IEnumerable<string> roles)
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");
             var secretKey = jwtSettings["Secret"] ?? "TWOJ_SUPER_TAJNY_KLUCZ_MIN_32_ZNAKI_DO_ZMIANY_W_PRODUKCJI!";
