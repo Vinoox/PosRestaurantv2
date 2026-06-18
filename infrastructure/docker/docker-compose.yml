@@ -79,6 +79,40 @@ services:
 
     restart: unless-stopped
 
+  catalog-api:
+    container_name: posrestaurant_catalog_api
+
+    build:
+      context: ../..
+      dockerfile: src/backend/Services/Catalog/Catalog.API/Dockerfile
+
+    image: posrestaurant/catalog-api:local
+
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+
+      ConnectionStrings__CatalogConnection: "Server=sqlserver,1433;Database=PosRestaurant_CatalogDb;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True"
+
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Port: "5672"
+      RabbitMq__Username: guest
+      RabbitMq__Password: guest
+
+      JwtSettings__Secret: "UYHGfYRDfUYFutrUYFutfRFffUGyuoliGgYFyfTDtucYUTFDf"
+      JwtSettings__Issuer: "https://localhost:7001"
+      JwtSettings__Audience: "https://localhost:7001"
+
+    ports:
+      - "5002:8080"
+
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+    restart: unless-stopped
 
 volumes:
   sqldata:
