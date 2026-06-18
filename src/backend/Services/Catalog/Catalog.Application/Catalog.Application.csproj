@@ -17,6 +17,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Ingredients\Queries\" />
+	  <Folder Include="Categories\Queries\Nowy folder\" />
 	</ItemGroup>
 </Project>

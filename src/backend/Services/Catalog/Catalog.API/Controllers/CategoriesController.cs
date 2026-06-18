@@ -1,7 +1,10 @@
 ﻿using System.Threading.Tasks;
 using Catalog.API.Contracts;
 using Catalog.Application.Categories.Commands.CreateCategory;
+using Catalog.Application.Categories.Commands.DeleteCategory;
+using Catalog.Application.Categories.Commands.UpdateCategory;
 using Catalog.Application.Categories.Queries.GetCategories;
+using Catalog.Application.Categories.Queries.GetCategoryById;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -54,5 +57,43 @@ public class CategoriesController : ControllerBase
         var result = await _mediator.Send(query);
 
         return Ok(result);
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetCategoryById(Guid id)
+    {
+        var restaurantId = _currentUserProvider.RestaurantId;
+        if (restaurantId == null) return Unauthorized();
+
+        var query = new GetCategoryByIdQuery(id, restaurantId.Value);
+        var result = await _mediator.Send(query);
+
+        return Ok(result);
+    }
+
+    [HttpPut("{id:guid}")]
+    [Authorize(Policy = "RequireRestaurantManager")]
+    public async Task<IActionResult> UpdateCategory(Guid id, [FromBody] UpdateCategoryRequest request)
+    {
+        var restaurantId = _currentUserProvider.RestaurantId;
+        if (restaurantId == null) return Unauthorized();
+
+        var command = new UpdateCategoryCommand(id, request.Name, request.Description, restaurantId.Value);
+        await _mediator.Send(command);
+
+        return NoContent();
+    }
+
+    [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "RequireRestaurantManager")]
+    public async Task<IActionResult> DeleteCategory(Guid id)
+    {
+        var restaurantId = _currentUserProvider.RestaurantId;
+        if (restaurantId == null) return Unauthorized();
+
+        var command = new DeleteCategoryCommand(id, restaurantId.Value);
+        await _mediator.Send(command);
+
+        return NoContent();
     }
 }

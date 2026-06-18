@@ -19,7 +19,7 @@ public class CreateCategoryCommandValidator : AbstractValidator<CreateCategoryCo
             .MaximumLength(100).WithMessage("Nazwa kategorii nie może przekraczać 100 znaków.")
             .MustAsync(async (command, name, cancellationToken) =>
             {
-                var exists = await _categoryRepository.ExistsByNameAsync(name, command.RestaurantId, cancellationToken);
+                var exists = await _categoryRepository.ExistsByNameAsync(name, command.RestaurantId, cancellationToken: cancellationToken);
                 return !exists;
             }).WithMessage("Kategoria o takiej nazwie już istnieje w tej restauracji.");
     }

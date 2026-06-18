@@ -1,6 +1,9 @@
 ﻿using System.Threading.Tasks;
 using Catalog.API.Contracts;
 using Catalog.Application.Ingredients.Commands.CreateIngredient;
+using Catalog.Application.Ingredients.Commands.DeleteIngredient;
+using Catalog.Application.Ingredients.Commands.UpdateIngredient;
+using Catalog.Application.Ingredients.Queries.GetIngredientById;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -37,5 +40,43 @@ public class IngredientsController : ControllerBase
 
         var result = await _mediator.Send(command);
         return Created(string.Empty, result);
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetIngredientById(Guid id)
+    {
+        var restaurantId = _currentUserProvider.RestaurantId;
+        if (restaurantId == null) return Unauthorized();
+
+        var query = new GetIngredientByIdQuery(id, restaurantId.Value);
+        var result = await _mediator.Send(query);
+
+        return Ok(result);
+    }
+
+    [HttpPut("{id:guid}")]
+    [Authorize(Policy = "RequireRestaurantManager")]
+    public async Task<IActionResult> UpdateIngredient(Guid id, [FromBody] UpdateIngredientRequest request)
+    {
+        var restaurantId = _currentUserProvider.RestaurantId;
+        if (restaurantId == null) return Unauthorized();
+
+        var command = new UpdateIngredientCommand(id, request.Name, request.Unit, restaurantId.Value);
+        await _mediator.Send(command);
+
+        return NoContent();
+    }
+
+    [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "RequireRestaurantManager")]
+    public async Task<IActionResult> DeleteIngredient(Guid id)
+    {
+        var restaurantId = _currentUserProvider.RestaurantId;
+        if (restaurantId == null) return Unauthorized();
+
+        var command = new DeleteIngredientCommand(id, restaurantId.Value);
+        await _mediator.Send(command);
+
+        return NoContent();
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Catalog.Domain.Entities;
@@ -12,13 +13,20 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
 {
     public ProductRepository(CatalogDbContext context) : base(context) { }
 
-    public async Task<bool> ExistsByNameAsync(string name, Guid restaurantId, CancellationToken cancellationToken = default)
+    public async Task<bool> ExistsByNameAsync(string name, Guid restaurantId, Guid? excludeId = null, CancellationToken cancellationToken = default)
     {
-        return await _context.Products
-            .AnyAsync(p => p.Name.ToLower() == name.ToLower() && p.RestaurantId == restaurantId, cancellationToken);
+        var query = _context.Products
+            .Where(p => p.Name.ToLower() == name.ToLower() && p.RestaurantId == restaurantId);
+
+        if (excludeId.HasValue)
+        {
+            query = query.Where(p => p.Id != excludeId.Value);
+        }
+
+        return await query.AnyAsync(cancellationToken);
     }
 
-    public async Task<Product?> GetWithIngredientsAsync(Guid id, Guid restaurantId, CancellationToken cancellationToken = default)
+    public async Task<Product?> GetByIdWithIngredientsAsync(Guid id, Guid restaurantId, CancellationToken cancellationToken = default)
     {
         return await _context.Products
             .Include(p => p.ProductIngredients)
