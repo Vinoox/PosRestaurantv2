@@ -17,7 +17,7 @@ public class CreateProductCommandValidator : AbstractValidator<CreateProductComm
             .MaximumLength(150).WithMessage("Nazwa nie może przekraczać 150 znaków.")
             .MustAsync(async (command, name, cancellationToken) =>
             {
-                var exists = await _productRepository.ExistsByNameAsync(name, command.RestaurantId, cancellationToken);
+                var exists = await _productRepository.ExistsByNameAsync(name, command.RestaurantId, cancellationToken: cancellationToken);
                 return !exists;
             }).WithMessage("Produkt o takiej nazwie już istnieje w menu.");
 
