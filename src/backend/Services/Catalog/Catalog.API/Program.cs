@@ -35,6 +35,11 @@ builder.Services.AddAuthentication(defaultScheme: JwtBearerDefaults.Authenticati
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
         };
     });
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireRestaurantManager", policy =>
+        policy.RequireClaim("restaurantRole", "Manager", "LocalAdmin"));
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

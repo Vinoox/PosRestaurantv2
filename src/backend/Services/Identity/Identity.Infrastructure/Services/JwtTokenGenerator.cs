@@ -19,7 +19,7 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         _configuration = configuration;
     }
 
-    public string GenerateAuthenticationToken(User user, IEnumerable<string> roles, Guid? restaurantId = null)
+    public string GenerateAuthenticationToken(User user, IEnumerable<string> roles, Guid? restaurantId = null, string? restaurantRole = null)
     {
         var claims = new List<Claim>
         {
@@ -33,6 +33,11 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         if (restaurantId.HasValue && restaurantId.Value != Guid.Empty)
         {
             claims.Add(new Claim("restaurantId", restaurantId.Value.ToString()));
+        }
+
+        if (!string.IsNullOrWhiteSpace(restaurantRole))
+        {
+            claims.Add(new Claim("restaurantRole", restaurantRole));
         }
 
         foreach (var role in roles)

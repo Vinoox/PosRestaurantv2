@@ -24,7 +24,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Manager, Admin")]
+    [Authorize(Policy = "RequireRestaurantManager")]
     public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryRequest request)
     {
         var restaurantId = _currentUserProvider.RestaurantId;

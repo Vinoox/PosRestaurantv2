@@ -6,5 +6,5 @@ namespace Identity.Application.Interfaces;
 
 public interface IJwtTokenGenerator
 {
-    string GenerateAuthenticationToken(User user, IEnumerable<string> roles, Guid? restaurantId = null);
+    string GenerateAuthenticationToken(User user, IEnumerable<string> roles, Guid? restaurantId = null, string? restaurantRole = null);
 }

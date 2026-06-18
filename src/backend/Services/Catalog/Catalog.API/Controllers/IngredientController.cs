@@ -23,7 +23,7 @@ public class IngredientsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Manager")]
+    [Authorize(Policy = "RequireRestaurantManager")]
     public async Task<IActionResult> CreateIngredient([FromBody] CreateIngredientRequest request)
     {
         var restaurantId = _currentUserProvider.RestaurantId;
