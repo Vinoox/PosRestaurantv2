@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Catalog.Application.Products.Commands.CreateProduct;
 
-namespace Catalog.API.Contracts;
+namespace Catalog.API.Contracts.Product;
 
 public record CreateProductRequest(
     string Name,

@@ -1,10 +1,9 @@
 ﻿using System.Threading.Tasks;
-using Catalog.API.Contracts.Category;
-using Catalog.Application.Categories.Commands.CreateCategory;
-using Catalog.Application.Categories.Commands.DeleteCategory;
-using Catalog.Application.Categories.Commands.UpdateCategory;
-using Catalog.Application.Categories.Queries.GetCategories;
-using Catalog.Application.Categories.Queries.GetCategoryById;
+using Catalog.API.Contracts.Ingredient;
+using Catalog.Application.Ingredients.Commands.CreateIngredient;
+using Catalog.Application.Ingredients.Commands.DeleteIngredient;
+using Catalog.Application.Ingredients.Commands.UpdateIngredient;
+using Catalog.Application.Ingredients.Queries.GetIngredientById;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,12 +14,12 @@ namespace Catalog.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class CategoriesController : ControllerBase
+public class IngredientsController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly ICurrentUserProvider _currentUserProvider;
 
-    public CategoriesController(IMediator mediator, ICurrentUserProvider currentUserProvider)
+    public IngredientsController(IMediator mediator, ICurrentUserProvider currentUserProvider)
     {
         _mediator = mediator;
         _currentUserProvider = currentUserProvider;
@@ -28,7 +27,7 @@ public class CategoriesController : ControllerBase
 
     [HttpPost]
     [Authorize(Policy = "RequireRestaurantManager")]
-    public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryRequest request)
+    public async Task<IActionResult> CreateIngredient([FromBody] CreateIngredientRequest request)
     {
         var restaurantId = _currentUserProvider.RestaurantId;
 
@@ -37,35 +36,19 @@ public class CategoriesController : ControllerBase
             return Unauthorized("Brak przypisanej restauracji w tokenie JWT.");
         }
 
-        var command = new CreateCategoryCommand(request.Name, request.Description, restaurantId.Value);
+        var command = new CreateIngredientCommand(request.Name, request.Unit, request.InitialStock, restaurantId.Value);
 
         var result = await _mediator.Send(command);
         return Created(string.Empty, result);
     }
 
-    [HttpGet]
-    public async Task<IActionResult> GetCategories()
-    {
-        var restaurantId = _currentUserProvider.RestaurantId;
-
-        if (restaurantId == null)
-        {
-            return Unauthorized("Brak przypisanej restauracji w tokenie JWT.");
-        }
-
-        var query = new GetCategoriesQuery(restaurantId.Value);
-        var result = await _mediator.Send(query);
-
-        return Ok(result);
-    }
-
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetCategoryById(Guid id)
+    public async Task<IActionResult> GetIngredientById(Guid id)
     {
         var restaurantId = _currentUserProvider.RestaurantId;
         if (restaurantId == null) return Unauthorized();
 
-        var query = new GetCategoryByIdQuery(id, restaurantId.Value);
+        var query = new GetIngredientByIdQuery(id, restaurantId.Value);
         var result = await _mediator.Send(query);
 
         return Ok(result);
@@ -73,12 +56,12 @@ public class CategoriesController : ControllerBase
 
     [HttpPut("{id:guid}")]
     [Authorize(Policy = "RequireRestaurantManager")]
-    public async Task<IActionResult> UpdateCategory(Guid id, [FromBody] UpdateCategoryRequest request)
+    public async Task<IActionResult> UpdateIngredient(Guid id, [FromBody] UpdateIngredientRequest request)
     {
         var restaurantId = _currentUserProvider.RestaurantId;
         if (restaurantId == null) return Unauthorized();
 
-        var command = new UpdateCategoryCommand(id, request.Name, request.Description, restaurantId.Value);
+        var command = new UpdateIngredientCommand(id, request.Name, request.Unit, restaurantId.Value);
         await _mediator.Send(command);
 
         return NoContent();
@@ -86,12 +69,12 @@ public class CategoriesController : ControllerBase
 
     [HttpDelete("{id:guid}")]
     [Authorize(Policy = "RequireRestaurantManager")]
-    public async Task<IActionResult> DeleteCategory(Guid id)
+    public async Task<IActionResult> DeleteIngredient(Guid id)
     {
         var restaurantId = _currentUserProvider.RestaurantId;
         if (restaurantId == null) return Unauthorized();
 
-        var command = new DeleteCategoryCommand(id, restaurantId.Value);
+        var command = new DeleteIngredientCommand(id, restaurantId.Value);
         await _mediator.Send(command);
 
         return NoContent();
