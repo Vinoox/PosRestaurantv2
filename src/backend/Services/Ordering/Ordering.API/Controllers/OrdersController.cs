@@ -7,6 +7,9 @@ using Ordering.API.Contracts;
 using Ordering.Application.Orders.Commands.AddOrderItem;
 using Ordering.Application.Orders.Commands.CreateOrder;
 using Ordering.Application.Orders.Commands.PayOrder;
+using Ordering.Application.Orders.Commands.RemoveOrderItem;
+using Ordering.Application.Orders.Queries.GetActiveOrders;
+using Ordering.Application.Orders.Queries.GetOrderDetails;
 using PosRestaurant.Shared.Interfaces;
 
 namespace Ordering.API.Controllers;
@@ -65,6 +68,42 @@ public class OrdersController : ControllerBase
         if (restaurantId == null) return Unauthorized();
 
         var command = new PayOrderCommand(id, restaurantId.Value);
+        await _mediator.Send(command);
+
+        return NoContent();
+    }
+
+    [HttpGet("active")]
+    public async Task<IActionResult> GetActiveOrders()
+    {
+        var restaurantId = _currentUserProvider.RestaurantId;
+        if (restaurantId == null) return Unauthorized();
+
+        var query = new GetActiveOrdersQuery(restaurantId.Value);
+        var result = await _mediator.Send(query);
+
+        return Ok(result);
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetOrderDetails(Guid id)
+    {
+        var restaurantId = _currentUserProvider.RestaurantId;
+        if (restaurantId == null) return Unauthorized();
+
+        var query = new GetOrderDetailsQuery(id, restaurantId.Value);
+        var result = await _mediator.Send(query);
+
+        return Ok(result);
+    }
+
+    [HttpDelete("{id:guid}/items/{itemId:guid}")]
+    public async Task<IActionResult> RemoveItem(Guid id, Guid itemId)
+    {
+        var restaurantId = _currentUserProvider.RestaurantId;
+        if (restaurantId == null) return Unauthorized();
+
+        var command = new RemoveOrderItemCommand(id, itemId, restaurantId.Value);
         await _mediator.Send(command);
 
         return NoContent();

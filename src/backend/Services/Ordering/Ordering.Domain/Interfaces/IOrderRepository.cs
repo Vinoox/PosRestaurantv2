@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Ordering.Domain.Entities;
@@ -9,4 +10,6 @@ namespace Ordering.Domain.Interfaces;
 public interface IOrderRepository : IGenericRepository<Order>
 {
     Task<Order?> GetOrderWithItemsAsync(Guid orderId, Guid restaurantId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Order>> GetActiveOrdersAsync(Guid restaurantId, CancellationToken cancellationToken = default);
 }

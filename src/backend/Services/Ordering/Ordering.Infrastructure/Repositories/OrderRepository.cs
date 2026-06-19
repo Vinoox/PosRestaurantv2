@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Ordering.Domain.Entities;
+using Ordering.Domain.Enums;
 using Ordering.Domain.Interfaces;
 using Ordering.Infrastructure.Data;
 
@@ -14,5 +15,13 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
         return await _context.Orders
             .Include(o => o.Items)
             .FirstOrDefaultAsync(o => o.Id == orderId && o.RestaurantId == restaurantId, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Order>> GetActiveOrdersAsync(Guid restaurantId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Orders
+            .Include(o => o.Items)
+            .Where(o => o.RestaurantId == restaurantId && o.Status == OrderStatus.Open)
+            .ToListAsync(cancellationToken);
     }
 }
