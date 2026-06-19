@@ -1,6 +1,7 @@
-﻿using PosRestaurant.Shared.Entities;
+﻿using System;
+using Identity.Domain.Exceptions;
+using PosRestaurant.Shared.Entities;
 using PosRestaurant.Shared.Exceptions;
-using System;
 
 namespace Identity.Domain.Entities
 {
@@ -15,7 +16,7 @@ namespace Identity.Domain.Entities
         public static Restaurant Create(string name, string? address = null, string? taxId = null)
         {
             if (string.IsNullOrWhiteSpace(name))
-                throw new DomainException("Nazwa restauracji nie może być pusta.");
+                throw new IdentityDomainException("Nazwa restauracji nie może być pusta.");
 
             return new Restaurant
             {
@@ -29,7 +30,7 @@ namespace Identity.Domain.Entities
         public void UpdateDetails(string name, string? address, string? taxId)
         {
             if (string.IsNullOrWhiteSpace(name))
-                throw new DomainException("Nazwa restauracji nie może być pusta.");
+                throw new IdentityDomainException("Nazwa restauracji nie może być pusta.");
 
             Name = name.Trim();
             Address = address?.Trim();

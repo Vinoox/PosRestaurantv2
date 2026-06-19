@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Identity.Domain.Exceptions;
+using Microsoft.AspNetCore.Identity;
 using PosRestaurant.Shared.Exceptions;
 using System;
 
@@ -18,13 +19,13 @@ namespace Identity.Domain.Entities
         public static User Create(string firstName, string lastName, string email)
         {
             if (string.IsNullOrWhiteSpace(firstName))
-                throw new DomainException("Imię nie może być puste");
+                throw new IdentityDomainException("Imię nie może być puste");
 
             if (string.IsNullOrWhiteSpace(lastName))
-                throw new DomainException("Nazwisko nie może być puste");
+                throw new IdentityDomainException("Nazwisko nie może być puste");
 
             if (string.IsNullOrWhiteSpace(email))
-                throw new DomainException("Email nie może być pusty");
+                throw new IdentityDomainException("Email nie może być pusty");
 
             return new User
             {
@@ -40,7 +41,7 @@ namespace Identity.Domain.Entities
         public void UpdateFirstName(string newFirstName)
         {
             if (string.IsNullOrWhiteSpace(newFirstName))
-                throw new DomainException("Imię nie może być puste");
+                throw new IdentityDomainException("Imię nie może być puste");
 
             FirstName = NormalizeString(newFirstName);
         }
@@ -48,7 +49,7 @@ namespace Identity.Domain.Entities
         public void UpdateLastName(string newLastName)
         {
             if (string.IsNullOrWhiteSpace(newLastName))
-                throw new DomainException("Nazwisko nie może być puste");
+                throw new IdentityDomainException("Nazwisko nie może być puste");
 
             LastName = NormalizeString(newLastName);
         }

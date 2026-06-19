@@ -114,5 +114,23 @@ services:
 
     restart: unless-stopped
 
+  ordering-api:
+    image: posrestaurant/ordering-api:local
+    build:
+      context: ../..
+      dockerfile: src/backend/Services/Ordering/Ordering.API/Dockerfile
+    ports:
+      - "5003:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__OrderingConnection=Server=sqlserver;Database=PosRestaurant_OrderingDb;User Id=sa;Password=YourStrong@Passw0rd!;TrustServerCertificate=True
+      - CatalogApi__BaseUrl=http://catalog-api:8080 
+      - JwtSettings__Secret=UYHGfYRDfUYFutrUYFutfRFffUGyuoliGgYFyfTDtucYUTFDf
+      - JwtSettings__Issuer=https://localhost:7001
+      - JwtSettings__Audience=https://localhost:7001
+    depends_on:
+      - sqlserver
+      - catalog-api
+
 volumes:
   sqldata:
