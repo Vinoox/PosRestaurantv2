@@ -21,6 +21,12 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserProvider, CurrentUserProvider>();
 
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireRestaurantManager", policy =>
+        policy.RequireClaim("restaurantRole", "Manager", "LocalAdmin"));
+});
+
 builder.Services.AddSwaggerGen(c =>
 {
     c.EnableAnnotations();

@@ -1,20 +1,10 @@
 ﻿using System;
-using System.Text.Json.Serialization;
 using MediatR;
 
-namespace Identity.Application.Restaurants.Commands.ChangeEmployeeRole
-{
-    public class ChangeEmployeeRoleCommand : IRequest<Unit>
-    {
-        [JsonIgnore]
-        public Guid RestaurantId { get; set; }
+namespace Identity.Application.Restaurants.Commands.ChangeEmployeeRole;
 
-        [JsonIgnore]
-        public Guid EmployeeId { get; set; }
-
-        [JsonIgnore]
-        public Guid RequesterId { get; set; }
-
-        public required Guid NewRoleId { get; set; }
-    }
-}
+public record ChangeEmployeeRoleCommand(
+    Guid RestaurantId,
+    Guid EmployeeId,
+    Guid NewRoleId,
+    Guid RequesterId) : IRequest<Unit>;
