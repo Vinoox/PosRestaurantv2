@@ -1,12 +1,11 @@
 ﻿using System.Text;
-using Catalog.API.Infrastructure;
-using Catalog.API.Services;
 using Catalog.Application;
 using Catalog.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PosRestaurant.Shared.Interfaces;
+using PosRestaurant.Shared.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 

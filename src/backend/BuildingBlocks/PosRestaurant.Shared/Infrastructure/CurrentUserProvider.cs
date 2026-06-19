@@ -3,7 +3,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using PosRestaurant.Shared.Interfaces;
 
-namespace Catalog.API.Services;
+namespace PosRestaurant.Shared.Infrastructure;
 
 public class CurrentUserProvider : ICurrentUserProvider
 {

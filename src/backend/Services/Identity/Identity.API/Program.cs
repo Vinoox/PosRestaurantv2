@@ -1,6 +1,4 @@
 using System;
-using Identity.API.Infrastructure;
-using Identity.API.Services;
 using Identity.Application;
 using Identity.Infrastructure;
 using Identity.Infrastructure.Data;
@@ -9,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
 using PosRestaurant.Shared.Interfaces;
+using PosRestaurant.Shared.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 

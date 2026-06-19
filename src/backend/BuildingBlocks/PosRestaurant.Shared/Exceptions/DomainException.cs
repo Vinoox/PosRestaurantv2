@@ -1,18 +1,10 @@
 ﻿using System;
 
-namespace PosRestaurant.Shared.Exceptions
+namespace PosRestaurant.Shared.Exceptions;
+
+public abstract class DomainException : Exception
 {
-    public class DomainException : Exception
+    protected DomainException(string message) : base(message)
     {
-        public DomainException()
-        { }
-
-        public DomainException(string message)
-            : base(message)
-        { }
-
-        public DomainException(string message, Exception innerException)
-            : base(message, innerException)
-        { }
     }
 }
