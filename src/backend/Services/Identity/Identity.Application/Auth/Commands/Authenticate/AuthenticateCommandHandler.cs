@@ -43,7 +43,7 @@ namespace Identity.Application.Auth.Commands.Authenticate
 
             var roles = await _userManager.GetRolesAsync(user);
 
-            var token = _jwtTokenGenerator.GenerateToken(user, roles);
+            var token = _jwtTokenGenerator.GenerateAuthenticationToken(user, roles);
 
             return token;
         }

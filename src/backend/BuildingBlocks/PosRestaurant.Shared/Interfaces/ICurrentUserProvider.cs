@@ -1,8 +1,10 @@
-﻿namespace PosRestaurant.Shared.Interfaces;
+﻿using System;
+
+namespace PosRestaurant.Shared.Interfaces;
 
 public interface ICurrentUserProvider
 {
-    string? UserId { get; }
-    int? RestaurantId { get; }
+    Guid? UserId { get; }
+    Guid? RestaurantId { get; }
     bool IsAuthenticated { get; }
 }

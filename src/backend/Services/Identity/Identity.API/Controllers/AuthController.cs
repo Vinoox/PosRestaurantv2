@@ -1,7 +1,9 @@
 ﻿using System.Threading.Tasks;
-using MediatR;
+using Identity.API.Contracts;
 using Identity.Application.Auth.Commands.Authenticate;
 using Identity.Application.Auth.Commands.RegisterUser;
+using Identity.Application.Auth.Commands.SelectRestaurant;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
@@ -57,5 +59,17 @@ namespace Identity.API.Controllers
             var result = await _mediator.Send(command);
             return Ok(result);
         }
+
+        [HttpPost("select-restaurant")]
+        [Authorize]
+        public async Task<IActionResult> SelectRestaurant([FromBody] SelectRestaurantRequest request)
+        {
+            var command = new SelectRestaurantCommand(request.RestaurantId);
+
+            var result = await _mediator.Send(command);
+
+            return Ok(result);
+        }
+
     }
 }

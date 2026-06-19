@@ -2,6 +2,6 @@
 {
     public interface IMultiTenantEntity
     {
-        int RestaurantId { get; set; }
+        Guid RestaurantId { get; set; }
     }
 }
