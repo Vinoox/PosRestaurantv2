@@ -47,6 +47,13 @@ services:
 
     restart: unless-stopped
 
+  mongodb:
+    image: mongo:latest
+    container_name: posrestaurant-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
 
   identity-api:
     container_name: posrestaurant_identity_api
@@ -132,5 +139,24 @@ services:
       - sqlserver
       - catalog-api
 
+  analytics-api:
+    image: posrestaurant/analytics-api:local
+    build:
+      context: ../..
+      dockerfile: src/backend/Services/Analytics/Analytics.API/Dockerfile
+    ports:
+      - "5004:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - MongoDb__ConnectionString=mongodb://mongodb:27017
+      - RabbitMq__Host=rabbitmq
+      - JwtSettings__Secret=UYHGfYRDfUYFutrUYFutfRFffUGyuoliGgYFyfTDtucYUTFDf
+      - JwtSettings__Issuer=https://localhost:7001
+      - JwtSettings__Audience=https://localhost:7001
+    depends_on:
+      - mongodb
+      - rabbitmq
+
 volumes:
   sqldata:
+  mongodb_data:
