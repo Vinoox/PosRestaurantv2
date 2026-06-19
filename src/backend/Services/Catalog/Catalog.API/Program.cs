@@ -1,11 +1,9 @@
 ﻿using System.Text;
+using Catalog.API.Infrastructure;
 using Catalog.API.Services;
 using Catalog.Application;
 using Catalog.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PosRestaurant.Shared.Interfaces;
@@ -41,6 +39,9 @@ builder.Services.AddAuthorization(options =>
         policy.RequireClaim("restaurantRole", "Manager", "LocalAdmin"));
 });
 
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -73,6 +74,8 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
