@@ -136,7 +136,7 @@ services:
       context: ../..
       dockerfile: src/backend/ApiGateway/ApiGateway/Dockerfile
     ports:
-      - "5000:8080"
+      - "5050:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
     depends_on:
