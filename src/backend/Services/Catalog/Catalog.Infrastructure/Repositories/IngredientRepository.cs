@@ -30,6 +30,7 @@ public class IngredientRepository : GenericRepository<Ingredient>, IIngredientRe
     public async Task<IReadOnlyList<Ingredient>> GetByRestaurantIdAsync(Guid restaurantId, CancellationToken cancellationToken = default)
     {
         return await _context.Ingredients
+            .AsNoTracking()
             .Where(i => i.RestaurantId == restaurantId)
             .ToListAsync(cancellationToken);
     }

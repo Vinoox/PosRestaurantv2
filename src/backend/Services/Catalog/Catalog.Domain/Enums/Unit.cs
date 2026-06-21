@@ -2,9 +2,9 @@
 
 public enum Unit
 {
-    Grams = 1,
-    Milliliters = 2,
-    Pieces = 3,
-    Kilograms = 4,
-    Liters = 5
+    G = 1,
+    ML = 2,
+    Szt = 3,
+    KG = 4,
+    L = 5
 }

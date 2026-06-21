@@ -7,6 +7,7 @@ using Catalog.Domain.Interfaces;
 using Catalog.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
+
 namespace Catalog.Infrastructure.Repositories;
 
 public class ProductRepository : GenericRepository<Product>, IProductRepository
@@ -32,5 +33,16 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
             .Include(p => p.ProductIngredients)
                 .ThenInclude(pi => pi.Ingredient)
             .FirstOrDefaultAsync(p => p.Id == id && p.RestaurantId == restaurantId, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Product>> GetByRestaurantIdAsync(Guid restaurantId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Products
+            .AsNoTracking()
+            .Include(p => p.Category)
+            .Include(p => p.ProductIngredients)
+                .ThenInclude(pi => pi.Ingredient)
+            .Where(p => p.RestaurantId == restaurantId)
+            .ToListAsync(cancellationToken);
     }
 }

@@ -16,7 +16,12 @@ public class MappingProfile : Profile
         CreateMap<ProductIngredient, ProductIngredientDto>()
             .ForMember(d => d.IngredientName, opt => opt.MapFrom(s => s.Ingredient.Name));
 
+        CreateMap<ProductIngredient, ProductIngredientDto>()
+            .ForMember(d => d.IngredientName, opt => opt.MapFrom(s => s.Ingredient != null ? s.Ingredient.Name : "Surowiec usunięty"))
+            .ForMember(d => d.Unit, opt => opt.MapFrom(s => s.Ingredient != null ? s.Ingredient.Unit.ToString() : "szt"));
+
         CreateMap<Product, ProductDto>()
+            .ForMember(d => d.CategoryName, opt => opt.MapFrom(s => s.Category != null ? s.Category.Name : "Brak kategorii"))
             .ForMember(d => d.Ingredients, opt => opt.MapFrom(s => s.ProductIngredients));
     }
 }

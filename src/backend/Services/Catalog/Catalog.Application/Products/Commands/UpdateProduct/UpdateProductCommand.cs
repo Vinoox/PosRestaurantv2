@@ -11,5 +11,6 @@ public record UpdateProductCommand(
     string? Description,
     decimal Price,
     Guid CategoryId,
+    bool IsAvailable,
     Guid RestaurantId,
     List<ProductIngredientRequestDto> Ingredients) : IRequest;
