@@ -1,11 +1,13 @@
 ﻿using System.Text;
 using Catalog.Application;
 using Catalog.Infrastructure;
+using Catalog.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using PosRestaurant.Shared.Interfaces;
 using PosRestaurant.Shared.Infrastructure;
+using PosRestaurant.Shared.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +34,7 @@ builder.Services.AddAuthentication(defaultScheme: JwtBearerDefaults.Authenticati
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
         };
     });
+
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("RequireRestaurantManager", policy =>
@@ -86,5 +89,19 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var context = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
+        await context.Database.MigrateAsync();
+        Console.WriteLine("Migracje bazy danych PosRestaurant_CatalogDb zostały pomyślnie zaaplikowane.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Błąd podczas automatycznej migracji bazy danych: {ex.Message}");
+    }
+}
 
 app.Run();
