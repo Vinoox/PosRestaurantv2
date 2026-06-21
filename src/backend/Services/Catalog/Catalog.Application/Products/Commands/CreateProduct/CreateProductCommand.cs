@@ -4,6 +4,7 @@ using Catalog.Application.Products.Dtos;
 using MediatR;
 
 namespace Catalog.Application.Products.Commands.CreateProduct;
+
 public record ProductIngredientRequestDto(Guid IngredientId, decimal QuantityUsed);
 
 public record CreateProductCommand(

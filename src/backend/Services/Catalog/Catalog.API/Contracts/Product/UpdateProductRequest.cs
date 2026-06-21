@@ -9,4 +9,5 @@ public record UpdateProductRequest(
     string? Description,
     decimal Price,
     Guid CategoryId,
+    bool IsAvailable,
     List<ProductIngredientRequestDto> Ingredients);

@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -29,16 +30,16 @@ public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand,
             Price = request.Price,
             CategoryId = request.CategoryId,
             RestaurantId = request.RestaurantId,
-
-            ProductIngredients = request.Ingredients.Select(i => new ProductIngredient
+            
+            ProductIngredients = request.Ingredients.Select(ing => new ProductIngredient
             {
-                IngredientId = i.IngredientId,
-                QuantityUsed = i.QuantityUsed
+                IngredientId = ing.IngredientId,
+                QuantityUsed = ing.QuantityUsed
             }).ToList()
         };
 
-        var createdProduct = await _productRepository.AddAsync(product, cancellationToken);
+        await _productRepository.AddAsync(product, cancellationToken);
 
-        return _mapper.Map<ProductDto>(createdProduct);
+        return _mapper.Map<ProductDto>(product);
     }
 }

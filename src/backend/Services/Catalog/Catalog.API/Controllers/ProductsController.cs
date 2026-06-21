@@ -91,6 +91,7 @@ public class ProductsController : ControllerBase
             request.Description,
             request.Price,
             request.CategoryId,
+            request.IsAvailable,
             restaurantId.Value,
             request.Ingredients);
 

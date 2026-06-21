@@ -3,13 +3,14 @@ using System.Collections.Generic;
 
 namespace Catalog.Application.Products.Dtos;
 
-public class ProductDto
+public record ProductDto
 {
-    public Guid Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string? Description { get; set; }
-    public decimal Price { get; set; }
-    public Guid CategoryId { get; set; }
-
-    public List<ProductIngredientDto> Ingredients { get; set; } = new();
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string? Description { get; init; }
+    public decimal Price { get; init; }
+    public Guid CategoryId { get; init; }
+    public string CategoryName { get; init; } = string.Empty;
+    public bool IsAvailable { get; init; }
+    public List<ProductIngredientDto> Ingredients { get; init; } = new();
 }

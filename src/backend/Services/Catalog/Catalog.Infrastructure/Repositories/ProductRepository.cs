@@ -39,6 +39,9 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
     {
         return await _context.Products
             .AsNoTracking()
+            .Include(p => p.Category)
+            .Include(p => p.ProductIngredients)
+                .ThenInclude(pi => pi.Ingredient)
             .Where(p => p.RestaurantId == restaurantId)
             .ToListAsync(cancellationToken);
     }

@@ -27,7 +27,7 @@ public class UpdateIngredientCommandHandler : IRequestHandler<UpdateIngredientCo
 
         ingredient.Name = request.Name;
         ingredient.Unit = request.Unit;
-
+        ingredient.StockQuantity = request.StockQuantity;
         await _ingredientRepository.UpdateAsync(ingredient, cancellationToken);
     }
 }

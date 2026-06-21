@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using Catalog.Application.Common.Exceptions;
 using Catalog.Domain.Entities;
@@ -30,15 +29,16 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand>
         product.Description = request.Description;
         product.Price = request.Price;
         product.CategoryId = request.CategoryId;
-
+        product.IsAvailable = request.IsAvailable;
         product.ProductIngredients.Clear();
-
-        foreach (var ingredient in request.Ingredients)
+        
+        foreach (var item in request.Ingredients)
         {
             product.ProductIngredients.Add(new ProductIngredient
             {
-                IngredientId = ingredient.IngredientId,
-                QuantityUsed = ingredient.QuantityUsed
+                ProductId = product.Id,
+                IngredientId = item.IngredientId,
+                QuantityUsed = item.QuantityUsed
             });
         }
 

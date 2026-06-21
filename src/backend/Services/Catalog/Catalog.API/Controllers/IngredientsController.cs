@@ -74,7 +74,13 @@ public class IngredientsController : ControllerBase
         var restaurantId = _currentUserProvider.RestaurantId;
         if (restaurantId == null) return Unauthorized();
 
-        var command = new UpdateIngredientCommand(id, request.Name, request.Unit, restaurantId.Value);
+        var command = new UpdateIngredientCommand(
+            id, 
+            request.Name, 
+            request.Unit, 
+            request.StockQuantity, // Przekazujemy stan z JSON-a
+            restaurantId.Value);
+
         await _mediator.Send(command);
 
         return NoContent();
