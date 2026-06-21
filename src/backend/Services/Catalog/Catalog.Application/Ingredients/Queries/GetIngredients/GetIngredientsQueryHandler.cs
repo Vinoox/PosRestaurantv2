@@ -1,30 +1,30 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using AutoMapper;
+using Catalog.Application.Ingredients.Dtos;
+using Catalog.Domain.Interfaces;
+using MediatR;
 
-namespace Catalog.Application.Ingredients.Queries.GetIngredients
-{
-    public class GetIngredientsQueryHandler : IRequestHandler<GetIngredientsQuery, IReadOnlyList<IngredientListItemDto>>
-{
-    private readonly ICatalogDbContext _context;
+namespace Catalog.Application.Ingredients.Queries.GetIngredients;
 
-    public GetIngredientsQueryHandler(ICatalogDbContext context)
+public class GetIngredientsQueryHandler : IRequestHandler<GetIngredientsQuery, IEnumerable<IngredientDto>>
+{
+    private readonly IIngredientRepository _ingredientRepository;
+    private readonly IMapper _mapper;
+
+    public GetIngredientsQueryHandler(IIngredientRepository ingredientRepository, IMapper mapper)
     {
-        _context = context;
+        _ingredientRepository = ingredientRepository;
+        _mapper = mapper;
     }
 
-    public async Task<IReadOnlyList<IngredientListItemDto>> Handle(GetIngredientsQuery request, CancellationToken cancellationToken)
+    public async Task<IEnumerable<IngredientDto>> Handle(GetIngredientsQuery request, CancellationToken cancellationToken)
     {
-        var ingredients = await _context.Ingredients
-            .Where(i => i.RestaurantId == request.RestaurantId)
-            .ToListAsync(cancellationToken);
+        // Analogicznie do Twojego GetByIdAndRestaurantIdAsync
+        var ingredients = await _ingredientRepository.GetByRestaurantIdAsync(request.RestaurantId, cancellationToken);
 
-        return ingredients.Select(i => new IngredientListItemDto(
-            i.Id,
-            i.Name,
-            i.Unit,
-            i.Stock // <--- UWAGA: Sprawdź w encji Ingredient jak nazywa się pole ze stanem magazynowym (Stock, CurrentStock, Quantity) i wpisz tu poprawną nazwę
-        )).ToList();
+        // AutoMapper w C# automatycznie potrafi zmapować kolekcję encji na kolekcję DTO
+        return _mapper.Map<IEnumerable<IngredientDto>>(ingredients);
     }
 }

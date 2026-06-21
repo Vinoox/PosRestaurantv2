@@ -1,34 +1,28 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using AutoMapper;
+using Catalog.Application.Products.Dtos;
+using Catalog.Domain.Interfaces;
+using MediatR;
 
-namespace Catalog.Application.Products.Queries.GetProducts
+namespace Catalog.Application.Products.Queries.GetProducts;
+
+public class GetProductsQueryHandler : IRequestHandler<GetProductsQuery, IEnumerable<ProductDto>>
 {
-    public class GetProductsQueryHandler : IRequestHandler<GetProductsQuery, IReadOnlyList<ProductListItemDto>>
+    private readonly IProductRepository _productRepository;
+    private readonly IMapper _mapper;
+
+    public GetProductsQueryHandler(IProductRepository productRepository, IMapper mapper)
     {
-        private readonly ICatalogDbContext _context;
+        _productRepository = productRepository;
+        _mapper = mapper;
+    }
 
-        public GetProductsQueryHandler(ICatalogDbContext context)
-        {
-            _context = context;
-        }
+    public async Task<IEnumerable<ProductDto>> Handle(GetProductsQuery request, CancellationToken cancellationToken)
+    {
+        var products = await _productRepository.GetByRestaurantIdAsync(request.RestaurantId, cancellationToken);
 
-        public async Task<IReadOnlyList<ProductListItemDto>> Handle(GetProductsQuery request, CancellationToken cancellationToken)
-        {
-            var products = await _context.Products
-                .Include(p => p.Category)
-                .Where(p => p.RestaurantId == request.RestaurantId)
-                .ToListAsync(cancellationToken);
-
-            return products.Select(p => new ProductListItemDto(
-                p.Id,
-                p.Name,
-                p.Description ?? string.Empty,
-                p.Price,
-                p.Category?.Name ?? "Inne",
-                true
-            )).ToList();
-        }
+        return _mapper.Map<IEnumerable<ProductDto>>(products);
     }
 }

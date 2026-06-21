@@ -1,16 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Catalog.Application.Ingredients.Dtos;
+using MediatR;
 
-namespace Catalog.Application.Ingredients.Queries.GetIngredients
-{
-    public record GetIngredientsQuery(Guid RestaurantId) : IRequest<IReadOnlyList<IngredientListItemDto>>;
+namespace Catalog.Application.Ingredients.Queries.GetIngredients;
 
-    public record IngredientListItemDto(
-        Guid Id,
-        string Name,
-        string Unit,
-        decimal Stock
-    );
-}
+public record GetIngredientsQuery(Guid RestaurantId) : IRequest<IEnumerable<IngredientDto>>;
