@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
-import { ShoppingCart, Plus, Minus, Trash2, CreditCard, Coffee, LogOut, Receipt } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Trash2, CreditCard, Coffee, LogOut, Receipt, ArrowLeft, BarChart3 } from 'lucide-react';
 
-// --- INTERFEJSY TYPÓW ---
 interface Product {
     id: string;
     name: string;
     price: number;
     description: string;
+    isAvailable: boolean;
 }
 
 interface CartItem {
@@ -21,7 +21,6 @@ export default function PosPage() {
     const navigate = useNavigate();
     const logout = useAuthStore((state) => state.logout);
 
-    // --- STANY KOMPONENTU ---
     const [products, setProducts] = useState<Product[]>([]);
     const [cart, setCart] = useState<CartItem[]>([]);
     const [tableNumber, setTableNumber] = useState<number | ''>('');
@@ -29,250 +28,170 @@ export default function PosPage() {
     const [isCheckingOut, setIsCheckingOut] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // --- POBIERANIE DANYCH Z CATALOG.API ---
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const response = await apiClient.get<Product[]>('/products');
-                setProducts(response.data);
+                const response = await apiClient.get<any[]>('/products');
+                // ACL Guard z weryfikacją stanu 86'd
+                const normalized: Product[] = response.data.map(p => ({
+                    id: p.id || p.Id || '',
+                    name: p.name || p.Name || 'Brak nazwy',
+                    price: parseFloat(p.price || p.Price || '0'),
+                    description: p.description || p.Description || '',
+                    isAvailable: p.isAvailable ?? p.IsAvailable ?? true
+                }));
+                setProducts(normalized);
             } catch (err) {
-                console.error("Błąd pobierania produktów:", err);
-                setError('Nie udało się pobrać menu. Sprawdź połączenie z serwerem.');
+                setError('Nie udało się pobrać menu. Sprawdź połączenie z Catalog API.');
             } finally {
                 setIsLoadingProducts(false);
             }
         };
-
         fetchProducts();
     }, []);
 
-    // --- LOGIKA KOSZYKA ---
     const addToCart = (product: Product) => {
-        setCart((prevCart) => {
-            const existingItem = prevCart.find(item => item.product.id === product.id);
-            if (existingItem) {
-                return prevCart.map(item => 
-                    item.product.id === product.id 
-                        ? { ...item, quantity: item.quantity + 1 } 
-                        : item
-                );
+        // STRAŻNIK: Nie nabijesz na kasę dania wyłączonego przez kuchnię!
+        if (!product.isAvailable) {
+            alert("Odmowa: To danie zostało oznaczone przez kuchnię jako WYPRZEDANE (86'd)!");
+            return;
+        }
+
+        setCart((prev) => {
+            const existing = prev.find(item => item.product.id === product.id);
+            if (existing) {
+                return prev.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
             }
-            return [...prevCart, { product, quantity: 1 }];
+            return [...prev, { product, quantity: 1 }];
         });
     };
 
     const updateQuantity = (productId: string, delta: number) => {
-        setCart((prevCart) => {
-            return prevCart.map(item => {
-                if (item.product.id === productId) {
-                    const newQuantity = item.quantity + delta;
-                    return { ...item, quantity: Math.max(1, newQuantity) };
-                }
-                return item;
-            });
-        });
+        setCart(prev => prev.map(item => item.product.id === productId ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item));
     };
 
-    const removeFromCart = (productId: string) => {
-        setCart(prevCart => prevCart.filter(item => item.product.id !== productId));
-    };
-
+    const removeFromCart = (productId: string) => setCart(prev => prev.filter(item => item.product.id !== productId));
     const totalAmount = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
 
-    // --- LOGIKA WYSYŁANIA ZAMÓWIENIA (ORDERING.API) ---
     const handleCheckout = async () => {
-        if (!tableNumber) {
-            alert("Podaj numer stolika!");
-            return;
-        }
-
-        if (cart.length === 0) {
-            alert("Koszyk jest pusty!");
-            return;
-        }
-
-        setIsCheckingOut(true);
-        setError(null);
+        if (!tableNumber || cart.length === 0) return;
+        setIsCheckingOut(true); setError(null);
 
         try {
-            const orderResponse = await apiClient.post('/orders', {
-                tableNumber: Number(tableNumber)
-            });
-            
-            const orderId = orderResponse.data.id || orderResponse.data;
+            const orderRes = await apiClient.post('/orders', { tableNumber: Number(tableNumber) });
+            const orderId = orderRes.data?.id || orderRes.data;
 
             for (const item of cart) {
-                await apiClient.post(`/orders/${orderId}/items`, {
-                    productId: item.product.id,
-                    quantity: item.quantity
-                });
+                await apiClient.post(`/orders/${orderId}/items`, { productId: item.product.id, quantity: item.quantity });
             }
 
             await apiClient.put(`/orders/${orderId}/pay`);
-
-            alert("Zamówienie zrealizowane i opłacone pomyślnie!");
-            setCart([]);
-            setTableNumber('');
-            
-        } catch (err: any) {
-            console.error("Błąd podczas finalizacji zamówienia:", err);
-            setError('Wystąpił problem podczas przetwarzania zamówienia.');
+            alert("Rachunek opłacony i zamknięty!");
+            setCart([]); setTableNumber('');
+        } catch (err) {
+            alert("Błąd komunikacji z Ordering API.");
         } finally {
             setIsCheckingOut(false);
         }
     };
 
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
-
     return (
-        <div className="flex h-screen bg-slate-100 overflow-hidden text-slate-800">
+        <div className="flex h-screen bg-slate-900 text-slate-100 font-sans overflow-hidden">
             
-            {/* --- LEWA STRONA: MENU (Katalog Produktów) --- */}
-            <div className="flex-1 flex flex-col h-full">
-                {/* Górny pasek */}
-                <header className="bg-white shadow-sm border-b border-slate-200 px-6 py-4 flex justify-between items-center">
-                    <div className="flex items-center gap-2 text-emerald-600 font-bold text-xl">
-                        <Coffee className="h-6 w-6" />
-                        <span>Katalog Menu</span>
+            {/* LEWA STRONA: MENU */}
+            <div className="flex-1 flex flex-col h-full bg-slate-950/40">
+                <header className="bg-slate-800 border-b border-slate-700 px-8 py-5 flex justify-between items-center shadow-lg">
+                    <div className="flex items-center gap-4">
+                        <button onClick={() => navigate('/home')} className="p-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl text-slate-300 flex items-center gap-2 text-xs font-bold transition-all"><ArrowLeft className="h-4 w-4" /> Zmień lokal</button>
+                        <div className="h-6 w-px bg-slate-700"></div>
+                        <div className="flex items-center gap-2 text-emerald-400 font-bold text-lg"><Coffee className="h-6 w-6" /> <span>Terminal POS</span></div>
                     </div>
-                    <button 
-                        onClick={handleLogout}
-                        className="flex items-center gap-2 text-slate-500 hover:text-red-500 transition-colors text-sm font-medium"
-                    >
-                        <LogOut className="h-4 w-4" />
-                        Wyloguj
-                    </button>
+
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => navigate('/dashboard')} className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/20"><BarChart3 className="h-4 w-4" /> Raport Dnia</button>
+                        <button onClick={() => { logout(); navigate('/login'); }} className="p-2.5 text-slate-400 hover:text-red-400 rounded-xl text-xs font-bold"><LogOut className="h-4 w-4" /></button>
+                    </div>
                 </header>
 
-                {/* Siatka produktów */}
-                <div className="p-6 flex-1 overflow-y-auto">
-                    {error && (
-                        <div className="bg-red-100 text-red-600 p-4 rounded-xl mb-6">
-                            {error}
-                        </div>
-                    )}
-
+                <div className="p-8 flex-1 overflow-y-auto">
+                    {error && <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl text-xs font-bold mb-6">{error}</div>}
+                    
                     {isLoadingProducts ? (
-                        <div className="flex items-center justify-center h-full text-slate-400">
-                            Ładowanie menu z serwera...
-                        </div>
+                        <div className="flex items-center justify-center h-full text-slate-500 font-mono text-xs">Synchronizacja bazy towarowej...</div>
                     ) : (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {products.map((product) => (
-                                <button
-                                    key={product.id}
-                                    onClick={() => addToCart(product)}
-                                    className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 hover:border-emerald-400 hover:shadow-md transition-all text-left flex flex-col h-32 active:scale-95"
-                                >
-                                    <h3 className="font-semibold text-slate-800 line-clamp-2 leading-tight">
-                                        {product.name}
-                                    </h3>
-                                    <div className="mt-auto pt-2 flex justify-between items-end">
-                                        <span className="font-bold text-emerald-600">
-                                            {product.price.toFixed(2)} PLN
-                                        </span>
-                                        <div className="bg-emerald-50 text-emerald-600 p-1.5 rounded-lg">
-                                            <Plus className="h-4 w-4" />
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {products.map((prod) => {
+                                const is86 = !prod.isAvailable;
+                                return (
+                                    <button
+                                        key={prod.id} onClick={() => addToCart(prod)}
+                                        className={`p-5 rounded-3xl border text-left flex flex-col justify-between h-36 transition-all relative overflow-hidden active:scale-95 ${
+                                            is86 ? 'bg-slate-900/40 border-red-500/30 opacity-60 cursor-not-allowed' : 'bg-slate-800 border-slate-700 hover:border-emerald-500 hover:shadow-xl'
+                                        }`}
+                                    >
+                                        <h3 className={`font-bold text-sm leading-tight ${is86 ? 'line-through text-slate-500' : 'text-white'}`}>{prod.name}</h3>
+                                        <div className="mt-auto pt-2 flex justify-between items-end">
+                                            <span className={`font-mono font-extrabold text-xs ${is86 ? 'text-slate-600' : 'text-emerald-400'}`}>{prod.price.toFixed(2)} zł</span>
+                                            <span className={`px-2 py-1 rounded-lg text-[10px] font-black tracking-wider ${is86 ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                                                {is86 ? 'BRAK' : '+ DODAJ'}
+                                            </span>
                                         </div>
-                                    </div>
-                                </button>
-                            ))}
+                                    </button>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* --- PRAWA STRONA: KOSZYK (Rachunek) --- */}
-            <div className="w-96 bg-white shadow-2xl flex flex-col border-l border-slate-200 z-10">
-                
-                {/* Nagłówek Koszyka */}
-                <div className="p-6 border-b border-slate-100 bg-slate-50">
-                    <div className="flex items-center gap-2 font-bold text-lg text-slate-800 mb-4">
-                        <ShoppingCart className="h-5 w-5 text-emerald-500" />
-                        Obecne Zamówienie
-                    </div>
+            {/* PRAWA STRONA: RACHUNEK */}
+            <div className="w-96 bg-slate-800 border-l border-slate-700 flex flex-col z-10 shadow-2xl">
+                <div className="p-6 border-b border-slate-700/80 bg-slate-800/50">
+                    <div className="flex items-center gap-2 font-bold text-white mb-4"><ShoppingCart className="h-5 w-5 text-emerald-400" /> Otwarte zamówienie</div>
                     <div>
-                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                            Numer Stolika
-                        </label>
+                        <label className="block text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 mb-1">Stolik docelowy *</label>
                         <input
-                            type="number"
-                            min="1"
-                            value={tableNumber}
-                            onChange={(e) => setTableNumber(e.target.value ? Number(e.target.value) : '')}
-                            className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-lg font-bold"
-                            placeholder="np. 12"
+                            type="number" min="1" value={tableNumber} onChange={e => setTableNumber(e.target.value ? Number(e.target.value) : '')}
+                            placeholder="NR STOLIKA"
+                            className="w-full bg-slate-900 border border-slate-600 rounded-2xl px-4 py-3 text-white font-mono font-black text-center text-lg focus:outline-none focus:border-emerald-500"
                         />
                     </div>
                 </div>
 
-                {/* Lista Pozycji */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                <div className="flex-1 overflow-y-auto p-6 space-y-3">
                     {cart.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-3">
-                            <Receipt className="h-12 w-12 opacity-20" />
-                            <p className="text-sm">Brak pozycji na rachunku</p>
-                        </div>
+                        <div className="h-full flex flex-col items-center justify-center text-slate-600 gap-2 font-mono text-xs"><Receipt className="h-10 w-10 opacity-20" /> Koszyk kelnerski pusty</div>
                     ) : (
                         cart.map((item) => (
-                            <div key={item.product.id} className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-3">
+                            <div key={item.product.id} className="bg-slate-900/60 border border-slate-700 rounded-2xl p-4 flex flex-col gap-3">
                                 <div className="flex justify-between items-start">
-                                    <span className="font-semibold text-sm pr-4 line-clamp-2">
-                                        {item.product.name}
-                                    </span>
-                                    <span className="font-bold text-slate-700 whitespace-nowrap">
-                                        {(item.product.price * item.quantity).toFixed(2)} zł
-                                    </span>
+                                    <span className="font-bold text-xs text-white">{item.product.name}</span>
+                                    <span className="font-mono font-bold text-xs text-emerald-400">{(item.product.price * item.quantity).toFixed(2)} zł</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-lg p-1">
-                                        <button 
-                                            onClick={() => updateQuantity(item.product.id, -1)}
-                                            className="p-1 hover:bg-slate-100 rounded text-slate-600 transition-colors"
-                                        >
-                                            <Minus className="h-4 w-4" />
-                                        </button>
-                                        <span className="font-bold w-4 text-center text-sm">{item.quantity}</span>
-                                        <button 
-                                            onClick={() => updateQuantity(item.product.id, 1)}
-                                            className="p-1 hover:bg-slate-100 rounded text-slate-600 transition-colors"
-                                        >
-                                            <Plus className="h-4 w-4" />
-                                        </button>
+                                    <div className="flex items-center gap-2 bg-slate-800 border border-slate-600 rounded-xl p-1">
+                                        <button onClick={() => updateQuantity(item.product.id, -1)} className="p-1 text-slate-400 hover:text-white"><Minus className="h-3 w-3" /></button>
+                                        <span className="font-mono font-bold text-xs w-5 text-center text-white">{item.quantity}</span>
+                                        <button onClick={() => updateQuantity(item.product.id, 1)} className="p-1 text-slate-400 hover:text-white"><Plus className="h-3 w-3" /></button>
                                     </div>
-                                    <button 
-                                        onClick={() => removeFromCart(item.product.id)}
-                                        className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
+                                    <button onClick={() => removeFromCart(item.product.id)} className="p-2 text-slate-500 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
                                 </div>
                             </div>
                         ))
                     )}
                 </div>
 
-                {/* Sekcja Podsumowania i Płatności */}
-                <div className="p-6 bg-slate-50 border-t border-slate-200">
-                    <div className="flex justify-between items-center mb-6">
-                        <span className="text-slate-500 font-medium">Suma całkowita</span>
-                        <span className="text-3xl font-extrabold text-emerald-600">
-                            {totalAmount.toFixed(2)} zł
-                        </span>
-                    </div>
+                <div className="p-6 bg-slate-800/90 border-t border-slate-700 space-y-4">
+                    <div className="flex justify-between items-baseline"><span className="text-xs text-slate-400 uppercase font-bold">Do zapłaty</span> <span className="text-3xl font-black font-mono text-emerald-400">{totalAmount.toFixed(2)} zł</span></div>
                     <button
-                        onClick={handleCheckout}
-                        disabled={isCheckingOut || cart.length === 0}
-                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 px-4 rounded-xl shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                        onClick={handleCheckout} disabled={isCheckingOut || cart.length === 0 || !tableNumber}
+                        className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-2xl shadow-lg shadow-emerald-600/30 transition-all disabled:opacity-40 flex items-center justify-center gap-2 text-xs uppercase tracking-wider"
                     >
-                        <CreditCard className="h-5 w-5" />
-                        {isCheckingOut ? 'Przetwarzanie...' : 'Zrealizuj rachunek'}
+                        <CreditCard className="h-4 w-4" /> {isCheckingOut ? 'Fiskalizowanie...' : 'Zamknij i opłać'}
                     </button>
                 </div>
             </div>
+
         </div>
     );
 }
