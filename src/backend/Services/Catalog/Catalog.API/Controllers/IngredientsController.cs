@@ -4,6 +4,7 @@ using Catalog.Application.Ingredients.Commands.CreateIngredient;
 using Catalog.Application.Ingredients.Commands.DeleteIngredient;
 using Catalog.Application.Ingredients.Commands.UpdateIngredient;
 using Catalog.Application.Ingredients.Queries.GetIngredientById;
+using Catalog.Application.Ingredients.Queries.GetIngredients;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -23,6 +24,18 @@ public class IngredientsController : ControllerBase
     {
         _mediator = mediator;
         _currentUserProvider = currentUserProvider;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetIngredients()
+    {
+        var restaurantId = _currentUserProvider.RestaurantId;
+        if (restaurantId == null) return Unauthorized();
+
+        var query = new Catalog.Application.Ingredients.Queries.GetIngredients.GetIngredientsQuery(restaurantId.Value);
+        var result = await _mediator.Send(query);
+
+        return Ok(result);
     }
 
     [HttpPost]

@@ -30,11 +30,13 @@ namespace Identity.Application.Restaurants.Commands.RegisterRestaurant
             }
 
             var restaurant = Restaurant.Create(request.Name, request.Address, request.TaxId);
-
             _context.Restaurants.Add(restaurant);
 
             var managerRole = RestaurantRole.Create("Manager", restaurant.Id, isSystemRole: true);
             _context.RestaurantRoles.Add(managerRole);
+
+            var defaultRole = RestaurantRole.Create("Default", restaurant.Id, isSystemRole: true);
+            _context.RestaurantRoles.Add(defaultRole);
 
             var ownership = RestaurantMember.Create(request.OwnerId, restaurant.Id, managerRole);
             _context.RestaurantMembers.Add(ownership);

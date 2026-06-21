@@ -4,6 +4,7 @@ using Catalog.Application.Products.Commands.CreateProduct;
 using Catalog.Application.Products.Commands.DeleteProduct;
 using Catalog.Application.Products.Commands.UpdateProduct;
 using Catalog.Application.Products.Queries.GetProductById;
+using Catalog.Application.Products.Queries.GetProducts;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -55,6 +56,23 @@ public class ProductsController : ControllerBase
         if (restaurantId == null) return Unauthorized();
 
         var query = new GetProductByIdQuery(id, restaurantId.Value);
+        var result = await _mediator.Send(query);
+
+        return Ok(result);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetProducts()
+    {
+        var restaurantId = _currentUserProvider.RestaurantId;
+
+        if (restaurantId == null)
+        {
+            return Unauthorized("Brak przypisanej restauracji w tokenie JWT.");
+        }
+
+        // Założyłem standardową nazwę zapytania w MediatR: GetProductsQuery
+        var query = new Catalog.Application.Products.Queries.GetProducts.GetProductsQuery(restaurantId.Value);
         var result = await _mediator.Send(query);
 
         return Ok(result);

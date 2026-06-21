@@ -40,7 +40,7 @@ export default function LoginPage() {
 
             if (token) {
                 loginGlobal(token);
-                navigate('/pos');
+                navigate('/home');
             } else {
                 // Jeśli nadal wejdziemy tutaj, sprawdź w konsoli (F12) w przeglądarce 
                 // jak wygląda obiekt i wpisz tutaj poprawną nazwę właściwości!
