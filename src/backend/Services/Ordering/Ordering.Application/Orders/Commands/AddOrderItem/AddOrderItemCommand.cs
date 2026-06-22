@@ -8,4 +8,5 @@ public record AddOrderItemCommand(
     Guid RestaurantId,
     Guid ProductId,
     int Quantity,
-    string AccessToken) : IRequest<Unit>;
+    string AccessToken
+) : IRequest<Unit>;

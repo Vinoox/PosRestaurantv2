@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MassTransit;
 using MediatR;
+using Ordering.Domain.Entities;
 using Ordering.Domain.Interfaces;
 using PosRestaurant.Shared.Exceptions;
 using PosRestaurant.Shared.Messaging.Events;
@@ -22,12 +23,10 @@ public class PayOrderCommandHandler : IRequestHandler<PayOrderCommand, Unit>
 
     public async Task<Unit> Handle(PayOrderCommand request, CancellationToken cancellationToken)
     {
-        var order = await _orderRepository.GetOrderWithItemsAsync(request.OrderId, request.RestaurantId, cancellationToken);
+        var order = await _orderRepository.GetByIdWithDetailsAsync(request.OrderId, cancellationToken);
 
-        if (order == null)
-        {
-            throw new NotFoundException($"Nie znaleziono zamówienia {request.OrderId}");
-        }
+        if (order == null || order.RestaurantId != request.RestaurantId)
+            throw new NotFoundException(nameof(Order), request.OrderId);
 
         order.MarkAsPaid();
 
@@ -37,7 +36,7 @@ public class PayOrderCommandHandler : IRequestHandler<PayOrderCommand, Unit>
             order.Id,
             order.RestaurantId,
             order.TotalAmount,
-            order.UpdatedAt ?? DateTime.UtcNow
+            order.PaidAt ?? DateTime.UtcNow
         );
 
         await _publishEndpoint.Publish(integrationEvent, cancellationToken);

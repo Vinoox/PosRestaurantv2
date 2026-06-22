@@ -5,9 +5,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Ordering.API.Contracts;
 using Ordering.Application.Orders.Commands.AddOrderItem;
+using Ordering.Application.Orders.Commands.AssignFulfillment;
+using Ordering.Application.Orders.Commands.CompleteOrder;
 using Ordering.Application.Orders.Commands.CreateOrder;
 using Ordering.Application.Orders.Commands.PayOrder;
 using Ordering.Application.Orders.Commands.RemoveOrderItem;
+using Ordering.Application.Orders.Commands.PayOrder;
+using Ordering.Application.Orders.Dtos;
 using Ordering.Application.Orders.Queries.GetActiveOrders;
 using Ordering.Application.Orders.Queries.GetOrderDetails;
 using PosRestaurant.Shared.Interfaces;
@@ -104,6 +108,31 @@ public class OrdersController : ControllerBase
         if (restaurantId == null) return Unauthorized();
 
         var command = new RemoveOrderItemCommand(id, itemId, restaurantId.Value);
+        await _mediator.Send(command);
+
+        return NoContent();
+    }
+
+
+    [HttpPatch("{id:guid}/fulfillment")]
+    public async Task<IActionResult> AssignFulfillment(Guid id, [FromBody] FulfillmentRequestDto fulfillmentData)
+    {
+        var restaurantId = _currentUserProvider.RestaurantId;
+        if (restaurantId == null) return Unauthorized();
+
+        var command = new AssignFulfillmentCommand(id, fulfillmentData, restaurantId.Value);
+        await _mediator.Send(command);
+
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/complete")]
+    public async Task<IActionResult> CompleteOrder(Guid id)
+    {
+        var restaurantId = _currentUserProvider.RestaurantId;
+        if (restaurantId == null) return Unauthorized();
+
+        var command = new CompleteOrderCommand(id, restaurantId.Value);
         await _mediator.Send(command);
 
         return NoContent();

@@ -10,5 +10,7 @@ public record OrderDto(
     string? TableNumber,
     decimal TotalAmount,
     DateTime CreatedAt,
+    int ActiveSeconds,
+    string FulfillmentType,
     List<OrderItemDto> Items
 );
