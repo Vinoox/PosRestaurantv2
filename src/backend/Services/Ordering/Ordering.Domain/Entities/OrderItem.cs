@@ -32,4 +32,10 @@ public class OrderItem : BaseEntity
             Quantity = quantity
         };
     }
+
+    internal void AddQuantity(int additionalQuantity)
+    {
+        if (additionalQuantity <= 0) throw new OrderDomainException("Dodawana ilość musi być większa niż 0.");
+        Quantity += additionalQuantity;
+    }
 }

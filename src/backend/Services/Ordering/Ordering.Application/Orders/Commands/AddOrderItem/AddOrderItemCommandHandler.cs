@@ -3,8 +3,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using Ordering.Application.Interfaces;
+using Ordering.Domain.Entities;
+using Ordering.Domain.Enums;
 using Ordering.Domain.Interfaces;
-using PosRestaurant.Shared.Exceptions; // Zakładam, że przeniosłeś bazowe wyjątki (np. NotFoundException) do Shared, lub użyjemy lokalnego wyjątku.
+using PosRestaurant.Shared.Exceptions;
 
 namespace Ordering.Application.Orders.Commands.AddOrderItem;
 
@@ -21,11 +23,16 @@ public class AddOrderItemCommandHandler : IRequestHandler<AddOrderItemCommand, U
 
     public async Task<Unit> Handle(AddOrderItemCommand request, CancellationToken cancellationToken)
     {
-        var order = await _orderRepository.GetOrderWithItemsAsync(request.OrderId, request.RestaurantId, cancellationToken);
+        var order = await _orderRepository.GetByIdWithDetailsAsync(request.OrderId, cancellationToken);
 
-        if (order == null)
+        if (order == null || order.RestaurantId != request.RestaurantId)
         {
-            throw new Exception($"Nie znaleziono zamówienia {request.OrderId}");
+            throw new NotFoundException(nameof(Order), request.OrderId);
+        }
+
+        if (order.Status == OrderStatus.Completed)
+        {
+            throw new BadRequestException("Nie można dodawać potraw do zamkniętego zamówienia.");
         }
 
         var productSnapshot = await _catalogServiceClient.GetProductSnapshotAsync(
@@ -36,10 +43,10 @@ public class AddOrderItemCommandHandler : IRequestHandler<AddOrderItemCommand, U
 
         if (productSnapshot == null)
         {
-            throw new Exception("Produkt nie istnieje w menu lub brak uprawnień.");
+            throw new BadRequestException("Wskazany produkt nie istnieje w menu lub jest chwilowo niedostępny.");
         }
 
-        order.AddItem(
+        order.AddOrderItem(
             productSnapshot.Id,
             productSnapshot.Name,
             productSnapshot.Price,
