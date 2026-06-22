@@ -5,11 +5,10 @@ import { useAuthStore } from './store/authStore';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage';
-import PosPage from './pages/PosPage';
 import DashboardPage from './pages/DashboardPage';
 import ManageRestaurantPage from './pages/ManageRestaurant/ManageRestaurantPage';
+import PosPage from './pages/PosPage';
 
-// Zamienione niedostępne JSX.Element na oficjalny ReactNode
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
     const isAuthenticated = useAuthStore(state => state.isAuthenticated);
     return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
