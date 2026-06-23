@@ -103,6 +103,7 @@ services:
       - "5003:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__OrderingConnection=Server=sqlserver;Database=PosRestaurant_OrderingDb;User Id=sa;Password=YourStrong@Passw0rd!;TrustServerCertificate=True
       - CatalogApi__BaseUrl=http://catalog-api:8080 
       - JwtSettings__Secret=UYHGfYRDfUYFutrUYFutfRFffUGyuoliGgYFyfTDtucYUTFDf
@@ -121,6 +122,7 @@ services:
       - "5004:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
       - MongoDb__ConnectionString=mongodb://mongodb:27017
       - RabbitMq__Host=rabbitmq
       - JwtSettings__Secret=UYHGfYRDfUYFutrUYFutfRFffUGyuoliGgYFyfTDtucYUTFDf
@@ -139,6 +141,7 @@ services:
       - "5050:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
     depends_on:
       - identity-api
       - catalog-api

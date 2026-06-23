@@ -20,19 +20,27 @@ using PosRestaurant.Shared.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 1. Konfiguracja Bazy Danych
 builder.Services.AddDbContext<OrderingDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("OrderingConnection")));
 
+// 2. Konfiguracja DI (Dependency Injection)
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserProvider, CurrentUserProvider>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
+// Poprawka DI: Rejestracja generycznego repozytorium (np. dla Table)
+builder.Services.AddScoped(typeof(PosRestaurant.Shared.Interfaces.IGenericRepository<>), typeof(Ordering.Infrastructure.Data.GenericRepository<>));
+
+// 3. Konfiguracja MediatR
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Ordering.Application.Orders.Commands.CreateOrder.CreateOrderCommand).Assembly));
 
+// 4. Konfiguracja MassTransit (RabbitMQ)
 builder.Services.AddMassTransit(x =>
 {
-    x.SetKebabCaseEndpointNameFormatter();
-
+    // Utrzymanie czystych nazw kolejek wzorem dobrych praktyk
+    x.SetKebabCaseEndpointNameFormatter(); 
+    
     x.UsingRabbitMq((context, cfg) =>
     {
         var rabbitHost = builder.Configuration["RabbitMq:Host"];
@@ -48,15 +56,18 @@ builder.Services.AddMassTransit(x =>
     });
 });
 
+// 5. Klienci HTTP (Komunikacja synchroniczna z Catalog API)
 builder.Services.AddHttpClient<ICatalogServiceClient, CatalogServiceClient>(client =>
 {
     var catalogUrl = builder.Configuration["CatalogApi:BaseUrl"];
     client.BaseAddress = new Uri(catalogUrl!);
 });
 
+// 6. Obsługa błędów
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
+// 7. Autoryzacja i Uwierzytelnianie JWT
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["Secret"] ?? throw new ArgumentNullException("Brak klucza JWT w konfiguracji!");
 
@@ -77,18 +88,22 @@ builder.Services.AddAuthentication(defaultScheme: JwtBearerDefaults.Authenticati
 
 builder.Services.AddAuthorization(options =>
 {
+    // Minimalne wymaganie dla Ordering - dostęp na poziomie lokalu
     options.AddPolicy("RequireRestaurantAccess", policy =>
         policy.RequireClaim("restaurantId"));
 });
 
+// 8. Kontrolery i Serializacja
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
+        // Gwarantuje, że statusy (np. OrderStatus) będą wysyłane jako tekst (np. "InPreparation"), a nie cyfry
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
-
+    
 builder.Services.AddEndpointsApiExplorer();
 
+// 9. Konfiguracja Swaggera z zabezpieczeniami JWT
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Ordering API", Version = "v1" });
@@ -132,6 +147,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
+// 10. Automatyczne Migracje przy uruchomieniu kontenera
 using (var scope = app.Services.CreateScope())
 {
     try
