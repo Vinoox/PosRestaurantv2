@@ -72,8 +72,13 @@ export default function HomePage() {
         try {
             const res = await apiClient.post('/auth/select-restaurant', { restaurantId });
             const scopedToken = extractJwt(res.data);
+            
+            // Pobieramy obecne userId ze Store (lub API/Profilu) żeby przekazać je dalej
+            const currentUserId = res.data?.userId || useAuthStore.getState().userId || profile?.id || '';
+
             if (scopedToken) {
-                useAuthStore.getState().login(scopedToken);
+                // NAPRAWA: Zastąpiono .login() nowym .setAuth()
+                useAuthStore.getState().setAuth(scopedToken, currentUserId);
                 navigate('/pos');
             } else {
                 alert("Błąd: Serwer potwierdził wejście, ale nie wygenerował klucza sesji.");
@@ -88,8 +93,13 @@ export default function HomePage() {
         try {
             const res = await apiClient.post('/auth/select-restaurant', { restaurantId });
             const scopedToken = extractJwt(res.data);
+            
+            // Pobieramy obecne userId
+            const currentUserId = res.data?.userId || useAuthStore.getState().userId || profile?.id || '';
+
             if (scopedToken) {
-                useAuthStore.getState().login(scopedToken);
+                // NAPRAWA: Zastąpiono .login() nowym .setAuth()
+                useAuthStore.getState().setAuth(scopedToken, currentUserId);
                 navigate(`/restaurants/${restaurantId}/manage`);
             } else {
                 throw new Error("Brak Scoped JWT.");
