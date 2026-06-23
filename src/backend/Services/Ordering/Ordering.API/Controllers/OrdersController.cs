@@ -6,11 +6,12 @@ using Microsoft.AspNetCore.Mvc;
 using Ordering.API.Contracts;
 using Ordering.Application.Orders.Commands.AddOrderItem;
 using Ordering.Application.Orders.Commands.AssignFulfillment;
+using Ordering.Application.Orders.Commands.CancelOrder;
 using Ordering.Application.Orders.Commands.CompleteOrder;
 using Ordering.Application.Orders.Commands.CreateOrder;
 using Ordering.Application.Orders.Commands.PayOrder;
 using Ordering.Application.Orders.Commands.RemoveOrderItem;
-using Ordering.Application.Orders.Commands.PayOrder;
+using Ordering.Application.Orders.Commands.UpdateOrderItemQuantity;
 using Ordering.Application.Orders.Dtos;
 using Ordering.Application.Orders.Queries.GetActiveOrders;
 using Ordering.Application.Orders.Queries.GetOrderDetails;
@@ -65,6 +66,30 @@ public class OrdersController : ControllerBase
         return NoContent();
     }
 
+    [HttpPatch("{id:guid}/items/{itemId:guid}")]
+    public async Task<IActionResult> UpdateItemQuantity(Guid id, Guid itemId, [FromBody] UpdateItemQuantityRequest request)
+    {
+        var restaurantId = _currentUserProvider.RestaurantId;
+        if (restaurantId == null) return Unauthorized();
+
+        var command = new UpdateOrderItemQuantityCommand(id, itemId, request.Quantity, restaurantId.Value);
+        await _mediator.Send(command);
+
+        return NoContent();
+    }
+
+    [HttpDelete("{id:guid}/items/{itemId:guid}")]
+    public async Task<IActionResult> RemoveItem(Guid id, Guid itemId)
+    {
+        var restaurantId = _currentUserProvider.RestaurantId;
+        if (restaurantId == null) return Unauthorized();
+
+        var command = new RemoveOrderItemCommand(id, itemId, restaurantId.Value);
+        await _mediator.Send(command);
+
+        return NoContent();
+    }
+
     [HttpPut("{id:guid}/pay")]
     public async Task<IActionResult> PayOrder(Guid id)
     {
@@ -72,6 +97,46 @@ public class OrdersController : ControllerBase
         if (restaurantId == null) return Unauthorized();
 
         var command = new PayOrderCommand(id, restaurantId.Value);
+        await _mediator.Send(command);
+
+        return NoContent();
+    }
+
+    // NAPRAWA BŁĘDU: Obsługa anulowania całego zamówienia z poziomu kosza
+    [HttpPut("{id:guid}/cancel")]
+    public async Task<IActionResult> CancelOrder(Guid id)
+    {
+        var restaurantId = _currentUserProvider.RestaurantId;
+        if (restaurantId == null) return Unauthorized();
+
+        var command = new CancelOrderCommand(id, restaurantId.Value);
+        await _mediator.Send(command);
+
+        return NoContent();
+    }
+
+    // NAPRAWA BŁĘDU 404: Podwójna trasa chwytająca żądania z głównego /api/fulfillment
+    [HttpPatch("/api/fulfillment")]
+    [HttpPatch("fulfillment")]
+    public async Task<IActionResult> AssignFulfillment([FromBody] FulfillmentRequestDto fulfillmentData)
+    {
+        var restaurantId = _currentUserProvider.RestaurantId;
+        if (restaurantId == null) return Unauthorized();
+
+        var targetOrderId = fulfillmentData.OrderId ?? Guid.Empty;
+        var command = new AssignFulfillmentCommand(targetOrderId, fulfillmentData, restaurantId.Value);
+        await _mediator.Send(command);
+
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/complete")]
+    public async Task<IActionResult> CompleteOrder(Guid id)
+    {
+        var restaurantId = _currentUserProvider.RestaurantId;
+        if (restaurantId == null) return Unauthorized();
+
+        var command = new CompleteOrderCommand(id, restaurantId.Value);
         await _mediator.Send(command);
 
         return NoContent();
@@ -100,41 +165,6 @@ public class OrdersController : ControllerBase
 
         return Ok(result);
     }
-
-    [HttpDelete("{id:guid}/items/{itemId:guid}")]
-    public async Task<IActionResult> RemoveItem(Guid id, Guid itemId)
-    {
-        var restaurantId = _currentUserProvider.RestaurantId;
-        if (restaurantId == null) return Unauthorized();
-
-        var command = new RemoveOrderItemCommand(id, itemId, restaurantId.Value);
-        await _mediator.Send(command);
-
-        return NoContent();
-    }
-
-
-    [HttpPatch("{id:guid}/fulfillment")]
-    public async Task<IActionResult> AssignFulfillment(Guid id, [FromBody] FulfillmentRequestDto fulfillmentData)
-    {
-        var restaurantId = _currentUserProvider.RestaurantId;
-        if (restaurantId == null) return Unauthorized();
-
-        var command = new AssignFulfillmentCommand(id, fulfillmentData, restaurantId.Value);
-        await _mediator.Send(command);
-
-        return NoContent();
-    }
-
-    [HttpPost("{id:guid}/complete")]
-    public async Task<IActionResult> CompleteOrder(Guid id)
-    {
-        var restaurantId = _currentUserProvider.RestaurantId;
-        if (restaurantId == null) return Unauthorized();
-
-        var command = new CompleteOrderCommand(id, restaurantId.Value);
-        await _mediator.Send(command);
-
-        return NoContent();
-    }
 }
+
+public record UpdateItemQuantityRequest(int Quantity);

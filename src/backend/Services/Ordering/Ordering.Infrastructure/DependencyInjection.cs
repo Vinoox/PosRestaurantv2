@@ -16,7 +16,6 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-
         services.AddDbContext<OrderingDbContext>(options =>
             options.UseSqlServer(
                 configuration.GetConnectionString("OrderingConnection"),
@@ -25,16 +24,17 @@ public static class DependencyInjection
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped<IOrderRepository, OrderRepository>();
 
+        // NAPRAWA 500: Wyciąganie prawidłowego URL do serwisu katalogu z docker-compose
+        var catalogUrl = configuration["CatalogApi:BaseUrl"] ?? configuration["Microservices:Catalog"] ?? "http://catalog-api:8080";
 
         services.AddHttpClient<ICatalogServiceClient, CatalogServiceClient>(client =>
         {
-            client.BaseAddress = new Uri(configuration["Microservices:Catalog"] ?? "http://localhost:5000");
+            client.BaseAddress = new Uri(catalogUrl);
         });
 
         services.AddMassTransit(x =>
         {
             x.SetKebabCaseEndpointNameFormatter();
-
             x.UsingRabbitMq((context, cfg) =>
             {
                 var rabbitMqHost = configuration["RabbitMq:Host"] ?? "localhost";

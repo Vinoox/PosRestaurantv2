@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
@@ -24,12 +25,14 @@ public class AssignFulfillmentCommandHandler : IRequestHandler<AssignFulfillment
 
     public async Task Handle(AssignFulfillmentCommand request, CancellationToken cancellationToken)
     {
-        var order = await _orderRepository.GetByIdWithDetailsAsync(request.OrderId, cancellationToken);
-        if (order == null || order.RestaurantId != request.RestaurantId)
-            throw new NotFoundException(nameof(Order), request.OrderId);
+        // Elastyczne wyciąganie OrderId (z parametru trasy lub z obiektu JSON)
+        var targetOrderId = request.OrderId != Guid.Empty ? request.OrderId : (request.FulfillmentData.OrderId ?? Guid.Empty);
+        if (targetOrderId == Guid.Empty)
+            throw new BadRequestException("Brak identyfikatora zamówienia.");
 
-        if (order.OrderItems.Count == 0)
-            throw new BadRequestException("Nie można przekazać do realizacji pustego rachunku.");
+        var order = await _orderRepository.GetByIdWithDetailsAsync(targetOrderId, cancellationToken);
+        if (order == null || order.RestaurantId != request.RestaurantId)
+            throw new NotFoundException(nameof(Order), targetOrderId);
 
         if (order.Fulfillment is DineInFulfillment oldDineIn)
         {
@@ -41,49 +44,70 @@ public class AssignFulfillmentCommandHandler : IRequestHandler<AssignFulfillment
             }
         }
 
-        Fulfillment newFulfillment = request.FulfillmentData.FulfillmentType.ToUpper() switch
+        // Normalizacja stringa z frontendu (np. 'DineIn' -> 'DINEIN', 'Delivery' -> 'DELIVERY')
+        var fTypeNorm = request.FulfillmentData.FulfillmentType?.ToUpper().Replace("_", "");
+
+        Fulfillment newFulfillment = fTypeNorm switch
         {
-            "DINE_IN" => await HandleDineInAsync(request.FulfillmentData, request.RestaurantId, cancellationToken),
+            "DINEIN" => await HandleDineInAsync(request.FulfillmentData, request.RestaurantId, cancellationToken),
             "TAKEAWAY" => new TakeawayFulfillment
             {
-                CustomerName = request.FulfillmentData.CustomerName,
+                CustomerName = request.FulfillmentData.CustomerName ?? "Klient z kasy",
                 PhoneNumber = request.FulfillmentData.PhoneNumber,
                 PickupTime = request.FulfillmentData.PickupTime
             },
-            "OWN_DELIVERY" => new OwnDeliveryFulfillment
+            "DELIVERY" or "OWNDELIVERY" => new OwnDeliveryFulfillment
             {
-                Street = request.FulfillmentData.Street!,
-                BuildingNumber = request.FulfillmentData.BuildingNumber!,
+                Street = request.FulfillmentData.DeliveryAddress ?? request.FulfillmentData.Street ?? "Własna",
+                BuildingNumber = request.FulfillmentData.BuildingNumber ?? "-",
                 ApartmentNumber = request.FulfillmentData.ApartmentNumber,
                 City = request.FulfillmentData.City ?? "Wrocław",
                 PhoneNumber = request.FulfillmentData.PhoneNumber,
                 DriverEmployeeId = request.FulfillmentData.DriverEmployeeId
             },
-            "AGGREGATOR" => new AggregatorFulfillment
+            "SERVICES" or "AGGREGATOR" => new AggregatorFulfillment
             {
-                ProviderName = request.FulfillmentData.ProviderName ?? "UberEats",
-                PickupCode = request.FulfillmentData.PickupCode!,
+                ProviderName = request.FulfillmentData.ProviderName ?? "Usługa zewnętrzna",
+                PickupCode = request.FulfillmentData.PickupCode ?? "---",
                 DeclaredExternalTotal = request.FulfillmentData.DeclaredExternalTotal ?? order.TotalAmount
             },
-            _ => throw new BadRequestException("Nieznany wariant realizacji.")
+            "UNASSIGNED" or "DRAFT" => null!,
+            _ => throw new BadRequestException($"Nieznany kanał realizacji: {fTypeNorm}")
         };
 
-        order.AssignFulfillment(newFulfillment);
+        if (newFulfillment != null)
+        {
+            order.AssignFulfillment(newFulfillment);
+        }
+
         await _orderRepository.UpdateAsync(order, cancellationToken);
     }
 
     private async Task<DineInFulfillment> HandleDineInAsync(FulfillmentRequestDto data, Guid restaurantId, CancellationToken ct)
     {
-        if (!data.TableId.HasValue) throw new BadRequestException("Wymagane ID stolika.");
+        Table? table = null;
 
-        var table = await _tableRepository.GetByIdAsync(data.TableId.Value, ct);
+        if (data.TableId.HasValue && data.TableId.Value != Guid.Empty)
+        {
+            table = await _tableRepository.GetByIdAsync(data.TableId.Value, ct);
+        }
+        else if (data.TableNumber.HasValue)
+        {
+            var allTables = await _tableRepository.GetAllAsync(ct);
+            table = allTables.FirstOrDefault(t => t.Number == data.TableNumber.Value && t.RestaurantId == restaurantId);
+
+            if (table == null)
+            {
+                table = Table.Create(restaurantId, data.TableNumber.Value, 4, "Główna");
+                await _tableRepository.AddAsync(table, ct);
+            }
+        }
+
         if (table == null || table.RestaurantId != restaurantId)
-            throw new NotFoundException(nameof(Table), data.TableId.Value);
+            throw new NotFoundException(nameof(Table), data.TableNumber ?? 0);
 
         table.Occupy();
-
         await _tableRepository.UpdateAsync(table, ct);
-
         return new DineInFulfillment { TableId = table.Id };
     }
 }

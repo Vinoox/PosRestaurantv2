@@ -12,16 +12,11 @@ namespace Ordering.Domain.Entities;
 public class Order : BaseAuditableEntity, IMultiTenantEntity
 {
     public Guid RestaurantId { get; set; }
-
     public DateTime OrderDate { get; private set; }
-
     public DateTime? SubmittedAt { get; private set; }
     public DateTime? CompletedAt { get; private set; }
-
-
     public bool IsPaid { get; private set; }
     public DateTime? PaidAt { get; private set; }
-
     public decimal TotalAmount { get; private set; }
     public OrderStatus Status { get; private set; } = OrderStatus.Created;
 
@@ -40,11 +35,10 @@ public class Order : BaseAuditableEntity, IMultiTenantEntity
         };
     }
 
-
     public void AddOrderItem(Guid productId, string productName, decimal unitPrice, int quantity = 1)
     {
-        if (Status == OrderStatus.Completed)
-            throw new OrderDomainException("Nie można dodawać potraw do zamkniętego zamówienia.");
+        if (Status == OrderStatus.Completed || Status == OrderStatus.Canceled)
+            throw new OrderDomainException("Nie można modyfikować potraw w zamkniętym lub anulowanym zamówieniu.");
 
         var existingItem = OrderItems.FirstOrDefault(x => x.ProductId == productId);
         if (existingItem != null)
@@ -59,12 +53,26 @@ public class Order : BaseAuditableEntity, IMultiTenantEntity
         RecalculateTotal();
     }
 
-    public void RemoveOrderItem(Guid productId)
+    public void UpdateOrderItemQuantity(Guid orderItemIdOrProductId, int quantity)
     {
-        if (Status == OrderStatus.Completed)
+        if (Status == OrderStatus.Completed || Status == OrderStatus.Canceled)
+            throw new OrderDomainException("Nie można modyfikować potraw w zamkniętym lub anulowanym zamówieniu.");
+
+        var item = OrderItems.FirstOrDefault(x => x.Id == orderItemIdOrProductId || x.ProductId == orderItemIdOrProductId);
+        if (item != null)
+        {
+            item.SetQuantity(quantity);
+            RecalculateTotal();
+        }
+    }
+
+    public void RemoveOrderItem(Guid orderItemIdOrProductId)
+    {
+        if (Status == OrderStatus.Completed || Status == OrderStatus.Canceled)
             throw new OrderDomainException("Nie można usuwać potraw z zamkniętego zamówienia.");
 
-        var item = OrderItems.FirstOrDefault(x => x.ProductId == productId);
+        // Obsługa wyszukiwania po ID encji lub po ID produktu
+        var item = OrderItems.FirstOrDefault(x => x.Id == orderItemIdOrProductId || x.ProductId == orderItemIdOrProductId);
         if (item != null)
         {
             OrderItems.Remove(item);
@@ -75,12 +83,11 @@ public class Order : BaseAuditableEntity, IMultiTenantEntity
     public void AssignFulfillment(Fulfillment fulfillment)
     {
         if (fulfillment == null) throw new ArgumentNullException(nameof(fulfillment));
-        if (Status == OrderStatus.Completed)
+        if (Status == OrderStatus.Completed || Status == OrderStatus.Canceled)
             throw new OrderDomainException("Nie można zmienić przypisania dla zamkniętego zamówienia.");
 
         fulfillment.OrderId = this.Id;
         Fulfillment = fulfillment;
-
         Status = OrderStatus.Assigned;
         SubmittedAt = DateTime.UtcNow;
     }
@@ -95,9 +102,14 @@ public class Order : BaseAuditableEntity, IMultiTenantEntity
     public void MarkAsCompleted()
     {
         if (Status == OrderStatus.Completed) throw new OrderDomainException("Zamówienie jest już ukończone.");
-
         Status = OrderStatus.Completed;
         CompletedAt = DateTime.UtcNow;
+    }
+
+    public void Cancel()
+    {
+        if (Status == OrderStatus.Completed) throw new OrderDomainException("Nie można anulować zrealizowanego zamówienia.");
+        Status = OrderStatus.Canceled;
     }
 
     private void RecalculateTotal()

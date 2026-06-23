@@ -3,8 +3,10 @@
 namespace Ordering.Application.Orders.Dtos;
 
 public record FulfillmentRequestDto(
+    Guid? OrderId,
     string FulfillmentType,
     Guid? TableId,
+    int? TableNumber,
     string? CustomerName,
     string? PhoneNumber,
     DateTime? PickupTime,
@@ -15,5 +17,7 @@ public record FulfillmentRequestDto(
     Guid? DriverEmployeeId,
     string? ProviderName,
     string? PickupCode,
-    decimal? DeclaredExternalTotal
+    decimal? DeclaredExternalTotal,
+    string? DeliveryAddress,
+    string? ServiceNote
 );
