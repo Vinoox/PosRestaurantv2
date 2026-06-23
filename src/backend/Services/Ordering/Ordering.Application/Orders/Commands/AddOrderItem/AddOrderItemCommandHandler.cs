@@ -4,9 +4,8 @@ using System.Threading.Tasks;
 using MediatR;
 using Ordering.Application.Interfaces;
 using Ordering.Domain.Entities;
-using Ordering.Domain.Enums;
 using Ordering.Domain.Interfaces;
-using PosRestaurant.Shared.Exceptions;
+using PosRestaurant.Shared.Exceptions; 
 
 namespace Ordering.Application.Orders.Commands.AddOrderItem;
 
@@ -23,18 +22,16 @@ public class AddOrderItemCommandHandler : IRequestHandler<AddOrderItemCommand, U
 
     public async Task<Unit> Handle(AddOrderItemCommand request, CancellationToken cancellationToken)
     {
+        // 1. Pobranie zamówienia z bazy właściwą metodą repozytorium
         var order = await _orderRepository.GetByIdWithDetailsAsync(request.OrderId, cancellationToken);
 
+        // 2. Weryfikacja istnienia i uprawnień do modyfikacji
         if (order == null || order.RestaurantId != request.RestaurantId)
         {
             throw new NotFoundException(nameof(Order), request.OrderId);
         }
 
-        if (order.Status == OrderStatus.Completed)
-        {
-            throw new BadRequestException("Nie można dodawać potraw do zamkniętego zamówienia.");
-        }
-
+        // 3. Pobranie aktualnych danych produktu z serwisu Katalogu (Cena, Nazwa)
         var productSnapshot = await _catalogServiceClient.GetProductSnapshotAsync(
             request.ProductId,
             request.RestaurantId,
@@ -43,15 +40,17 @@ public class AddOrderItemCommandHandler : IRequestHandler<AddOrderItemCommand, U
 
         if (productSnapshot == null)
         {
-            throw new BadRequestException("Wskazany produkt nie istnieje w menu lub jest chwilowo niedostępny.");
+            throw new BadRequestException("Nie udało się pobrać produktu z katalogu. Sprawdź czy istnieje i czy masz uprawnienia.");
         }
 
+        // 4. Dodanie pozycji do zamówienia (Logika domenowa wewnątrz encji Order)
         order.AddOrderItem(
             productSnapshot.Id,
             productSnapshot.Name,
             productSnapshot.Price,
             request.Quantity);
 
+        // 5. Zapis do bazy
         await _orderRepository.UpdateAsync(order, cancellationToken);
 
         return Unit.Value;

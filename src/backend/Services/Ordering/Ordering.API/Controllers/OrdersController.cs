@@ -62,7 +62,6 @@ public class OrdersController : ControllerBase
             accessToken);
 
         await _mediator.Send(command);
-
         return NoContent();
     }
 
@@ -74,7 +73,6 @@ public class OrdersController : ControllerBase
 
         var command = new UpdateOrderItemQuantityCommand(id, itemId, request.Quantity, restaurantId.Value);
         await _mediator.Send(command);
-
         return NoContent();
     }
 
@@ -86,7 +84,6 @@ public class OrdersController : ControllerBase
 
         var command = new RemoveOrderItemCommand(id, itemId, restaurantId.Value);
         await _mediator.Send(command);
-
         return NoContent();
     }
 
@@ -98,11 +95,10 @@ public class OrdersController : ControllerBase
 
         var command = new PayOrderCommand(id, restaurantId.Value);
         await _mediator.Send(command);
-
         return NoContent();
     }
 
-    // NAPRAWA BŁĘDU: Obsługa anulowania całego zamówienia z poziomu kosza
+    // GWARANCJA ZGODNOŚCI Z FRONTENDEM (Przycisk Kosza)
     [HttpPut("{id:guid}/cancel")]
     public async Task<IActionResult> CancelOrder(Guid id)
     {
@@ -111,13 +107,11 @@ public class OrdersController : ControllerBase
 
         var command = new CancelOrderCommand(id, restaurantId.Value);
         await _mediator.Send(command);
-
         return NoContent();
     }
 
-    // NAPRAWA BŁĘDU 404: Podwójna trasa chwytająca żądania z głównego /api/fulfillment
+    // GWARANCJA ZGODNOŚCI Z FRONTENDEM (Wymuszenie obsługi PATCH /api/fulfillment)
     [HttpPatch("/api/fulfillment")]
-    [HttpPatch("fulfillment")]
     public async Task<IActionResult> AssignFulfillment([FromBody] FulfillmentRequestDto fulfillmentData)
     {
         var restaurantId = _currentUserProvider.RestaurantId;
@@ -126,7 +120,6 @@ public class OrdersController : ControllerBase
         var targetOrderId = fulfillmentData.OrderId ?? Guid.Empty;
         var command = new AssignFulfillmentCommand(targetOrderId, fulfillmentData, restaurantId.Value);
         await _mediator.Send(command);
-
         return NoContent();
     }
 
@@ -138,7 +131,6 @@ public class OrdersController : ControllerBase
 
         var command = new CompleteOrderCommand(id, restaurantId.Value);
         await _mediator.Send(command);
-
         return NoContent();
     }
 
@@ -150,7 +142,6 @@ public class OrdersController : ControllerBase
 
         var query = new GetActiveOrdersQuery(restaurantId.Value);
         var result = await _mediator.Send(query);
-
         return Ok(result);
     }
 
@@ -162,7 +153,6 @@ public class OrdersController : ControllerBase
 
         var query = new GetOrderDetailsQuery(id, restaurantId.Value);
         var result = await _mediator.Send(query);
-
         return Ok(result);
     }
 }
