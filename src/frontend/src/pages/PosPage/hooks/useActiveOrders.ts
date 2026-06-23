@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../../../api/client';
-// DODANO: Import OrderStatus
-import type { PosOrder, OrderStatus } from '../types'; 
+import type { PosOrder, OrderStatus, FulfillmentType } from '../types'; 
 import { ORDER_STATUS } from '../constants';
 
 export function useActiveOrders(pollingIntervalMs: number = 5000) {
@@ -18,16 +17,19 @@ export function useActiveOrders(pollingIntervalMs: number = 5000) {
             const mappedOrders: PosOrder[] = response.data.map(o => {
                 
                 const rawStatus = o.status ?? o.Status;
-                // NAPRAWA: Jawne typowanie zmiennej jako OrderStatus
                 let normalizedStatus: OrderStatus = ORDER_STATUS.Open; 
                 if (rawStatus === 'InPreparation' || rawStatus === 1) normalizedStatus = ORDER_STATUS.InPreparation;
                 if (rawStatus === 'Paid' || rawStatus === 2) normalizedStatus = ORDER_STATUS.Completed;
 
-                const rawFulfillment = o.fulfillmentType ?? o.FulfillmentType;
-                let normalizedFulfillment = rawFulfillment;
-                if (!rawFulfillment || rawFulfillment.toUpperCase() === 'DRAFT') {
-                    normalizedFulfillment = 'Unassigned';
-                }
+                // NAPRAWA: Zabezpieczone, bezpieczne mapowanie typów realizacji z C#
+                const rawFulfillment = (o.fulfillmentType ?? o.FulfillmentType ?? '').toUpperCase();
+                let normalizedFulfillment: FulfillmentType = 'Unassigned';
+                
+                if (rawFulfillment === 'DINEIN') normalizedFulfillment = 'DineIn';
+                else if (rawFulfillment === 'TAKEAWAY') normalizedFulfillment = 'Takeaway';
+                else if (rawFulfillment === 'DELIVERY' || rawFulfillment === 'OWNDELIVERY') normalizedFulfillment = 'Delivery';
+                else if (rawFulfillment === 'SERVICES' || rawFulfillment === 'AGGREGATOR') normalizedFulfillment = 'Services';
+                else normalizedFulfillment = 'Unassigned';
 
                 const rawTable = o.tableNumber ?? o.TableNumber;
                 const isDraftTable = rawTable === 'Robocze (Sierota)';

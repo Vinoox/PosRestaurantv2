@@ -1,6 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PosRestaurant.Shared.Entities;
 using PosRestaurant.Shared.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Ordering.Infrastructure.Data;
 
@@ -30,7 +34,6 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseEntity
 
     public async Task UpdateAsync(T entity, CancellationToken cancellationToken = default)
     {
-        _context.Entry(entity).State = EntityState.Modified;
         await _context.SaveChangesAsync(cancellationToken);
     }
 
