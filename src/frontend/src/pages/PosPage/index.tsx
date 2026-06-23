@@ -68,12 +68,11 @@ export default function PosPageOrchestrator() {
                 </div>
 
                 <div className="w-[24%] min-w-[340px] border-l border-slate-800 bg-slate-900 flex flex-col z-10 shadow-2xl">
+                    {/* NAPRAWA: Rozbicie akcji na samo odświeżanie i jawne czyszczenie zaznaczenia */}
                     <ReceiptColumn 
                         activeOrder={activeOrder} 
-                        onOrderProcessed={() => {
-                            setSelectedOrderId(null);
-                            refreshNow();
-                        }}
+                        onRefreshData={refreshNow}
+                        onClearSelection={() => setSelectedOrderId(null)}
                     />
                 </div>
             </div>

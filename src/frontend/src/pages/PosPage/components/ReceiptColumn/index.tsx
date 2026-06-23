@@ -7,16 +7,25 @@ import { Receipt, ShoppingCart, CheckCircle2 } from 'lucide-react';
 
 interface ReceiptColumnProps {
     activeOrder: PosOrder | null;
-    onOrderProcessed: () => void;
+    onRefreshData: () => void;
+    onClearSelection: () => void;
 }
 
-export default function ReceiptColumn({ activeOrder, onOrderProcessed }: ReceiptColumnProps) {
-    const { updateItemQuantity, removeItemFromOrder, completeOrder, isProcessing } = usePosActions(onOrderProcessed);
+export default function ReceiptColumn({ activeOrder, onRefreshData, onClearSelection }: ReceiptColumnProps) {
+    // Przekazujemy do hooka TYLKO onRefreshData. Dzięki temu +, - oraz usuwanie nie zamykają rachunku.
+    const { updateItemQuantity, removeItemFromOrder, completeOrder, isProcessing } = usePosActions(onRefreshData);
 
     const liveTotalAmount = useMemo(() => {
         if (!activeOrder) return 0;
         return activeOrder.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
     }, [activeOrder]);
+
+    // Dedykowany handler dla przycisku $ ZAKOŃCZ $
+    const handleCompleteOrder = async () => {
+        if (!activeOrder) return;
+        await completeOrder(activeOrder.id);
+        onClearSelection(); // To zamknie paragon po pomyślnym zatwierdzeniu w API
+    };
 
     if (!activeOrder) {
         return (
@@ -82,16 +91,16 @@ export default function ReceiptColumn({ activeOrder, onOrderProcessed }: Receipt
                 </span>
             </div>
 
-            {/* 4. DOCK REALIZACJI (zawsze ma przycisk ZAPISZ w sobie) */}
+            {/* 4. DOCK REALIZACJI (Przekazujemy onRefreshData, by zapis nie wywalał rachunku) */}
             <div className="shrink-0">
-                <FulfillmentDock order={activeOrder} onSuccess={onOrderProcessed} />
+                <FulfillmentDock order={activeOrder} onSuccess={onRefreshData} />
             </div>
 
             {/* 5. ODDZIELONA SEKCJA: GIGANTYCZNY PRZYCISK ZAKOŃCZ */}
             <div className="p-4 bg-slate-950 border-t-2 border-slate-900 shrink-0">
                 <button
                     disabled={isProcessing}
-                    onClick={() => completeOrder(activeOrder.id)}
+                    onClick={handleCompleteOrder}
                     className="w-full py-5 bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 active:scale-[0.98] disabled:opacity-50 text-white font-black rounded-2xl tracking-[0.2em] text-xl shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all flex items-center justify-center gap-3"
                 >
                     <CheckCircle2 className="w-7 h-7" />
