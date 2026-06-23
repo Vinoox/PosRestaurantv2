@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Identity.API.Contracts;
 using Identity.Application.Auth.Commands.Authenticate;
+using Identity.Application.Auth.Commands.GoogleLogin;
 using Identity.Application.Auth.Commands.RegisterUser;
 using Identity.Application.Auth.Commands.SelectRestaurant;
 using MediatR;
@@ -55,6 +56,16 @@ namespace Identity.API.Controllers
         {
             var command = new SelectRestaurantCommand(request.RestaurantId);
 
+            var result = await _mediator.Send(command);
+
+            return Ok(result);
+        }
+
+        [HttpPost("google")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+        {
+            var command = new GoogleLoginCommand(request.IdToken);
             var result = await _mediator.Send(command);
 
             return Ok(result);

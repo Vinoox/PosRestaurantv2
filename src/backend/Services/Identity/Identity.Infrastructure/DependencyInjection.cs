@@ -24,6 +24,7 @@ public static class DependencyInjection
                 b => b.MigrationsAssembly(typeof(IdentityDbContext).Assembly.FullName)));
 
         services.AddScoped<IIdentityDbContext>(provider => provider.GetRequiredService<IdentityDbContext>());
+        services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 
         services.AddIdentityCore<User>(options =>
         {
