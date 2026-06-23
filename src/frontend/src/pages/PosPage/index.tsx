@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, WifiOff } from 'lucide-react';
 import { useActiveOrders } from './hooks/useActiveOrders';
-import { ORDER_STATUS } from './constants';
+import { usePosActions } from './hooks/usePosActions';
 
 import KanbanColumn from './components/KanbanColumn';
 import MenuColumn from './components/MenuColumn';
@@ -13,12 +13,21 @@ export default function PosPageOrchestrator() {
     const { orders, isLoading, error, refreshNow } = useActiveOrders(3000); 
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
+    const { createNewOrder, cancelOrder, isProcessing } = usePosActions(refreshNow);
+
     const activeOrder = useMemo(() => {
         return orders.find(o => o.id === selectedOrderId) || null;
     }, [orders, selectedOrderId]);
 
-    const openOrders = useMemo(() => orders.filter(o => o.status === ORDER_STATUS.Open), [orders]);
-    const inPrepOrders = useMemo(() => orders.filter(o => o.status === ORDER_STATUS.InPreparation), [orders]);
+    const handleCreateNewOrder = async () => {
+        const newOrderId = await createNewOrder();
+        if (newOrderId) setSelectedOrderId(newOrderId);
+    };
+
+    const handleCancelOrder = async (id: string) => {
+        await cancelOrder(id);
+        if (selectedOrderId === id) setSelectedOrderId(null);
+    };
 
     return (
         <div className="flex flex-col h-screen bg-slate-900 text-slate-100 font-sans overflow-hidden">
@@ -29,7 +38,6 @@ export default function PosPageOrchestrator() {
                 >
                     <ArrowLeft className="h-6 w-6" /> Zmień lokal
                 </button>
-                
                 <div className="flex items-center gap-4">
                     {error && (
                         <div className="flex items-center gap-2 text-red-400 bg-red-400/10 px-4 py-2 rounded-xl font-bold animate-pulse">
@@ -43,24 +51,23 @@ export default function PosPageOrchestrator() {
             </header>
 
             <div className="flex flex-1 overflow-hidden">
-                <div className="w-[30%] min-w-[350px] border-r border-slate-800 bg-slate-900/50 flex flex-col">
+                <div className="w-[22%] min-w-[300px] border-r border-slate-800 bg-slate-900/50 flex flex-col relative">
                     <KanbanColumn 
-                        openOrders={openOrders}
-                        inPrepOrders={inPrepOrders}
+                        orders={orders}
                         selectedOrderId={selectedOrderId}
                         onSelectOrder={(id: string) => setSelectedOrderId(id)}
+                        onCreateNewOrder={handleCreateNewOrder}
+                        onCancelOrder={handleCancelOrder}
                         isLoading={isLoading}
+                        isProcessing={isProcessing}
                     />
                 </div>
 
                 <div className="flex-1 bg-slate-950/40 flex flex-col relative shadow-[inset_0_0_40px_rgba(0,0,0,0.3)]">
-                    <MenuColumn 
-                        activeOrder={activeOrder} 
-                        onRefreshData={refreshNow}
-                    />
+                    <MenuColumn activeOrder={activeOrder} onRefreshData={refreshNow} />
                 </div>
 
-                <div className="w-[30%] min-w-[400px] border-l border-slate-800 bg-slate-900 flex flex-col z-10 shadow-2xl">
+                <div className="w-[24%] min-w-[340px] border-l border-slate-800 bg-slate-900 flex flex-col z-10 shadow-2xl">
                     <ReceiptColumn 
                         activeOrder={activeOrder} 
                         onOrderProcessed={() => {

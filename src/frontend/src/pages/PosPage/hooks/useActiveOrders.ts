@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../../../api/client';
-import type { PosOrder } from '../types';
+// DODANO: Import OrderStatus
+import type { PosOrder, OrderStatus } from '../types'; 
+import { ORDER_STATUS } from '../constants';
 
 export function useActiveOrders(pollingIntervalMs: number = 5000) {
     const [orders, setOrders] = useState<PosOrder[]>([]);
@@ -13,21 +15,43 @@ export function useActiveOrders(pollingIntervalMs: number = 5000) {
                 signal: abortController?.signal
             });
             
-            const mappedOrders: PosOrder[] = response.data.map(o => ({
-                id: o.id || o.Id,
-                orderNumber: o.orderNumber || o.OrderNumber || '---',
-                tableNumber: o.tableNumber || o.TableNumber || null,
-                status: o.status ?? o.Status,
-                totalAmount: o.totalAmount || o.TotalAmount || 0,
-                createdAt: o.createdAt || o.CreatedAt,
-                items: (o.items || o.Items || []).map((i: any) => ({
-                    id: i.id || i.Id,
-                    productId: i.productId || i.ProductId,
-                    productName: i.productName || i.ProductName || 'Nieznany',
-                    unitPrice: i.unitPrice || i.UnitPrice || 0,
-                    quantity: i.quantity || i.Quantity || 1
-                }))
-            }));
+            const mappedOrders: PosOrder[] = response.data.map(o => {
+                
+                const rawStatus = o.status ?? o.Status;
+                // NAPRAWA: Jawne typowanie zmiennej jako OrderStatus
+                let normalizedStatus: OrderStatus = ORDER_STATUS.Open; 
+                if (rawStatus === 'InPreparation' || rawStatus === 1) normalizedStatus = ORDER_STATUS.InPreparation;
+                if (rawStatus === 'Paid' || rawStatus === 2) normalizedStatus = ORDER_STATUS.Completed;
+
+                const rawFulfillment = o.fulfillmentType ?? o.FulfillmentType;
+                let normalizedFulfillment = rawFulfillment;
+                if (!rawFulfillment || rawFulfillment.toUpperCase() === 'DRAFT') {
+                    normalizedFulfillment = 'Unassigned';
+                }
+
+                const rawTable = o.tableNumber ?? o.TableNumber;
+                const isDraftTable = rawTable === 'Robocze (Sierota)';
+
+                const shortId = (o.id || o.Id || '0000').substring(0, 5).toUpperCase();
+                const fallbackOrderNumber = isDraftTable ? `NOWE-${shortId}` : `ZAM-${shortId}`;
+
+                return {
+                    id: o.id || o.Id,
+                    orderNumber: o.orderNumber || o.OrderNumber || fallbackOrderNumber,
+                    tableNumber: isDraftTable ? null : rawTable,
+                    status: normalizedStatus,
+                    totalAmount: o.totalAmount ?? o.TotalAmount ?? 0,
+                    createdAt: o.createdAt || o.CreatedAt,
+                    fulfillmentType: normalizedFulfillment,
+                    items: (o.items || o.Items || []).map((i: any) => ({
+                        id: i.id || i.Id,
+                        productId: i.productId || i.ProductId,
+                        productName: i.productName || i.ProductName || 'Nieznany',
+                        unitPrice: i.unitPrice ?? i.UnitPrice ?? 0,
+                        quantity: i.quantity ?? i.Quantity ?? 1
+                    }))
+                };
+            });
 
             setOrders(mappedOrders);
             setError(null);

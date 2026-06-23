@@ -1,14 +1,15 @@
 import type { PosOrder } from '../../types';
 import { ORDER_STATUS } from '../../constants';
-import { Clock, Hash, Utensils } from 'lucide-react';
+import { Clock, Hash, Utensils, Trash2 } from 'lucide-react';
 
 interface OrderCardProps {
     order: PosOrder;
     isSelected: boolean;
     onClick: () => void;
+    onCancelOrder: (id: string) => void;
 }
 
-export default function OrderCard({ order, isSelected, onClick }: OrderCardProps) {
+export default function OrderCard({ order, isSelected, onClick, onCancelOrder }: OrderCardProps) {
     const isPrep = order.status === ORDER_STATUS.InPreparation;
     
     return (
@@ -44,8 +45,22 @@ export default function OrderCard({ order, isSelected, onClick }: OrderCardProps
                     <Clock className="h-3.5 w-3.5" />
                     {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
-                <div className="font-mono font-black text-emerald-400">
-                    {order.totalAmount.toFixed(2)} zł
+                
+                <div className="flex items-center gap-3">
+                    <span className="font-mono font-black text-emerald-400">
+                        {order.totalAmount.toFixed(2)} zł
+                    </span>
+                    {/* PRZYCISK USUWANIA (KOSZ) */}
+                    <div 
+                        onClick={(e) => {
+                            e.stopPropagation(); // Blokuje zaznaczenie karty przy kliknięciu w kosz
+                            if(window.confirm("Na pewno usunąć ten rachunek?")) onCancelOrder(order.id);
+                        }}
+                        className="p-1.5 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-colors cursor-pointer"
+                        title="Usuń/Anuluj zamówienie"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </div>
                 </div>
             </div>
         </button>
