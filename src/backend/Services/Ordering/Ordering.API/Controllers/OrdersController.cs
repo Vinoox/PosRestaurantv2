@@ -10,7 +10,7 @@ using Ordering.Application.Orders.Commands.CompleteOrder;
 using Ordering.Application.Orders.Commands.CreateOrder;
 using Ordering.Application.Orders.Commands.PayOrder;
 using Ordering.Application.Orders.Commands.RemoveOrderItem;
-using Ordering.Application.Orders.Commands.PayOrder;
+// using Ordering.Application.Orders.Commands.UpdateOrderItemQuantity; // Dodany namespace dla komendy zmiany ilości
 using Ordering.Application.Orders.Dtos;
 using Ordering.Application.Orders.Queries.GetActiveOrders;
 using Ordering.Application.Orders.Queries.GetOrderDetails;
@@ -113,6 +113,18 @@ public class OrdersController : ControllerBase
         return NoContent();
     }
 
+    // // NOWY ENDPOINT: Obsługa przycisków (+) i (-) na paragonie
+    // [HttpPatch("{id:guid}/items/{itemId:guid}")]
+    // public async Task<IActionResult> UpdateItemQuantity(Guid id, Guid itemId, [FromBody] UpdateItemQuantityRequest request)
+    // {
+    //     var restaurantId = _currentUserProvider.RestaurantId;
+    //     if (restaurantId == null) return Unauthorized();
+
+    //     var command = new UpdateOrderItemQuantityCommand(id, itemId, request.Quantity, restaurantId.Value);
+    //     await _mediator.Send(command);
+
+    //     return NoContent();
+    // }
 
     [HttpPatch("{id:guid}/fulfillment")]
     public async Task<IActionResult> AssignFulfillment(Guid id, [FromBody] FulfillmentRequestDto fulfillmentData)
@@ -138,3 +150,6 @@ public class OrdersController : ControllerBase
         return NoContent();
     }
 }
+
+// Rekord żądania dla Patcha (możesz go też przenieść do folderu Contracts)
+public record UpdateItemQuantityRequest(int Quantity);
