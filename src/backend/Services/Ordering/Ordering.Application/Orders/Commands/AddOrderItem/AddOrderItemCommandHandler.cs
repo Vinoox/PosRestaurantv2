@@ -22,7 +22,6 @@ public class AddOrderItemCommandHandler : IRequestHandler<AddOrderItemCommand, U
 
     public async Task<Unit> Handle(AddOrderItemCommand request, CancellationToken cancellationToken)
     {
-        // 1. Zawsze ładujemy encję korzenia (Order) ze wszystkimi szczegółami.
         var order = await _orderRepository.GetByIdWithDetailsAsync(request.OrderId, cancellationToken);
 
         if (order == null || order.RestaurantId != request.RestaurantId)
@@ -30,7 +29,6 @@ public class AddOrderItemCommandHandler : IRequestHandler<AddOrderItemCommand, U
             throw new NotFoundException(nameof(Order), request.OrderId);
         }
 
-        // 2. Weryfikujemy katalog
         var productSnapshot = await _catalogServiceClient.GetProductSnapshotAsync(
             request.ProductId,
             request.RestaurantId,
@@ -42,14 +40,13 @@ public class AddOrderItemCommandHandler : IRequestHandler<AddOrderItemCommand, U
             throw new BadRequestException("Produkt nie istnieje w menu lub brak uprawnień.");
         }
 
-        // 3. Dodajemy potrawę za pomocą właściwej metody z Domain Driven Design
+        // Domenowe utworzenie snapshotu na paragonie
         order.AddOrderItem(
             productSnapshot.Id,
             productSnapshot.Name,
             productSnapshot.Price,
             request.Quantity);
 
-        // 4. Bezpieczny zapis z czystym repozytorium - EF Core sam ogarnie resztę.
         await _orderRepository.UpdateAsync(order, cancellationToken);
 
         return Unit.Value;

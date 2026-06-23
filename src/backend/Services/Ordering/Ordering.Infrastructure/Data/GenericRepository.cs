@@ -32,7 +32,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseEntity
         return entity;
     }
 
-    public async Task UpdateAsync(T entity, CancellationToken cancellationToken = default)
+    public virtual async Task UpdateAsync(T entity, CancellationToken cancellationToken = default)
     {
         await _context.SaveChangesAsync(cancellationToken);
     }
