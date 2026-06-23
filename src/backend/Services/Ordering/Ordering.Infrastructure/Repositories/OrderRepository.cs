@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Ordering.Domain.Entities;
+using Ordering.Domain.Entities.Fulfillments;
 using Ordering.Domain.Enums;
 using Ordering.Domain.Interfaces;
 using Ordering.Infrastructure.Data;
@@ -19,7 +20,8 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
     {
         return await _dbSet
             .Include(o => o.OrderItems)
-            .Include(o => o.Fulfillment)
+            .Include(o => o.Fulfillment!)
+                .ThenInclude(f => ((DineInFulfillment)f).Table)
             .FirstOrDefaultAsync(o => o.Id == orderId, cancellationToken);
     }
 
@@ -34,7 +36,8 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
     {
         return await _dbSet
             .Include(o => o.OrderItems)
-            .Include(o => o.Fulfillment)
+            .Include(o => o.Fulfillment!)
+                .ThenInclude(f => ((DineInFulfillment)f).Table)
             .Where(o => o.RestaurantId == restaurantId && o.Status != OrderStatus.Completed && o.Status != OrderStatus.Canceled)
             .ToListAsync(cancellationToken);
     }

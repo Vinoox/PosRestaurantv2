@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using Ordering.Application.Orders.Dtos;
-using Ordering.Domain.Entities;
 using Ordering.Domain.Entities.Fulfillments;
 using Ordering.Domain.Interfaces;
 
@@ -15,6 +14,7 @@ public class GetActiveOrdersQueryHandler : IRequestHandler<GetActiveOrdersQuery,
 {
     private readonly IOrderRepository _orderRepository;
 
+    // WSTRZYKIWANE WYŁĄCZNIE REPOZYTORIUM
     public GetActiveOrdersQueryHandler(IOrderRepository orderRepository)
     {
         _orderRepository = orderRepository;

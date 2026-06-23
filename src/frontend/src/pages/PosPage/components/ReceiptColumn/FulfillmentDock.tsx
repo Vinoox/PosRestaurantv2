@@ -23,16 +23,24 @@ const SERVICE_PROVIDERS = [
     { id: 'Glovo', bg: 'bg-[#FFC244]', text: 'text-slate-900' },
 ];
 
-// Mock stolików (Docelowo z backendu GET /api/tables)
+// Mock stolików
 const MOCK_TABLES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
+// Mock Kierowców (Do podpięcia pod backend w przyszłości)
+const MOCK_DRIVERS = [
+    { id: 'driver-1', name: 'Maciej (Skoda)' },
+    { id: 'driver-2', name: 'Anna (Rower)' },
+    { id: 'driver-3', name: 'Jan (Hulajnoga)' }
+];
+
+// GLOBALNY CACHE: Zapamiętuje dane wpisane w formularze pomiędzy zmianami rachunków
+const formDraftCache: Record<string, any> = {};
 
 export default function FulfillmentDock({ order, onSuccess }: FulfillmentDockProps) {
     const { updateFulfillment, isProcessing } = usePosActions(onSuccess);
 
-    const [selectedTab, setSelectedTab] = useState<FulfillmentType>(order.fulfillmentType || 'DineIn');
-
-    // Stany dla wszystkich pól
-    const [tableNum, setTableNum] = useState<number | null>(order.tableNumber);
+    const [selectedTab, setSelectedTab] = useState<FulfillmentType>('DineIn');
+    const [tableNum, setTableNum] = useState<number | null>(null);
     const [street, setStreet] = useState('');
     const [building, setBuilding] = useState('');
     const [apartment, setApartment] = useState('');
@@ -40,26 +48,44 @@ export default function FulfillmentDock({ order, onSuccess }: FulfillmentDockPro
     const [phone, setPhone] = useState('');
     const [provider, setProvider] = useState('');
     const [pickupCode, setPickupCode] = useState('');
+    const [driverId, setDriverId] = useState('');
 
+    // Wczytywanie z Cache lub API po zmianie zamówienia
     useEffect(() => {
-        setSelectedTab(order.fulfillmentType || 'DineIn');
-        setTableNum(order.tableNumber);
+        const draft = formDraftCache[order.id] || {};
+        setSelectedTab(draft.selectedTab || order.fulfillmentType || 'DineIn');
+        setTableNum(draft.tableNum !== undefined ? draft.tableNum : order.tableNumber);
+        
+        // Pola formularzy - wczytanie z pamięci podręcznej (jeśli kelner już coś wpisał)
+        setStreet(draft.street || '');
+        setBuilding(draft.building || '');
+        setApartment(draft.apartment || '');
+        setCity(draft.city || '');
+        setPhone(draft.phone || '');
+        setProvider(draft.provider || '');
+        setPickupCode(draft.pickupCode || '');
+        setDriverId(draft.driverId || '');
     }, [order.id, order.fulfillmentType, order.tableNumber]);
+
+    // Zapisywanie do Cache w locie po każdej zmianie literki
+    useEffect(() => {
+        formDraftCache[order.id] = {
+            selectedTab, tableNum, street, building, apartment, city, phone, provider, pickupCode, driverId
+        };
+    }, [order.id, selectedTab, tableNum, street, building, apartment, city, phone, provider, pickupCode, driverId]);
 
     const handleSaveFulfillment = async () => {
         await updateFulfillment(order.id, {
             fulfillmentType: selectedTab,
             tableNumber: selectedTab === 'DineIn' ? tableNum : null,
-            // Pola dostawy własnej
             street, buildingNumber: building, apartmentNumber: apartment, city, phoneNumber: phone,
-            // Pola usług zewnętrznych
-            providerName: provider, pickupCode: pickupCode
+            providerName: provider, pickupCode: pickupCode,
+            driverEmployeeId: driverId || null
         });
     };
 
     return (
         <div className="p-4 bg-slate-950 border-t border-slate-800 flex flex-col gap-4 relative">
-            {/* Zakładki */}
             <div className="grid grid-cols-5 gap-1 bg-slate-900 p-1.5 rounded-2xl">
                 {FULFILLMENT_OPTIONS.map(opt => {
                     const Icon = opt.icon;
@@ -77,9 +103,7 @@ export default function FulfillmentDock({ order, onSuccess }: FulfillmentDockPro
                 })}
             </div>
 
-            {/* Obszar roboczy dla wybranej metody */}
             <div className="min-h-[100px]">
-                {/* 1. NA MIEJSCU (Kafelki stolików) */}
                 {selectedTab === 'DineIn' && (
                     <div className="grid grid-cols-4 gap-2 animate-in fade-in">
                         {MOCK_TABLES.map(num => (
@@ -94,7 +118,6 @@ export default function FulfillmentDock({ order, onSuccess }: FulfillmentDockPro
                     </div>
                 )}
 
-                {/* 2. ODBIÓR OSOBISTY */}
                 {selectedTab === 'Takeaway' && (
                     <div className="animate-in fade-in space-y-2">
                         <input type="text" placeholder="Imię klienta (opcjonalnie)..." className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:border-indigo-500 outline-none" />
@@ -102,7 +125,6 @@ export default function FulfillmentDock({ order, onSuccess }: FulfillmentDockPro
                     </div>
                 )}
 
-                {/* 3. DOSTAWA (Rozszerzona) */}
                 {selectedTab === 'Delivery' && (
                     <div className="animate-in fade-in space-y-2">
                         <div className="grid grid-cols-3 gap-2">
@@ -112,31 +134,43 @@ export default function FulfillmentDock({ order, onSuccess }: FulfillmentDockPro
                             <input type="text" placeholder="Miasto" value={city} onChange={e=>setCity(e.target.value)} className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-indigo-500 outline-none" />
                         </div>
                         <input type="tel" placeholder="Telefon kontaktowy" value={phone} onChange={e=>setPhone(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-indigo-400 font-mono focus:border-indigo-500 outline-none" />
+                        
+                        {/* Selector Kierowcy */}
+                        <select 
+                            value={driverId} onChange={e=>setDriverId(e.target.value)}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-300 focus:border-indigo-500 outline-none mt-1"
+                        >
+                            <option value="">Wybierz kierowcę (opcjonalnie)...</option>
+                            {MOCK_DRIVERS.map(d => (
+                                <option key={d.id} value={d.id}>{d.name}</option>
+                            ))}
+                        </select>
                     </div>
                 )}
 
-                {/* 4. USŁUGA (Kafelki brandów) */}
                 {selectedTab === 'Services' && (
                     <div className="animate-in fade-in space-y-3">
                         <div className="grid grid-cols-2 gap-2">
-                            {SERVICE_PROVIDERS.map(prov => (
-                                <button
-                                    key={prov.id} onClick={() => setProvider(prov.id)}
-                                    className={`py-3 rounded-xl font-black text-xs transition-transform active:scale-95 border-2
-                                        ${provider === prov.id ? `${prov.bg} ${prov.text} border-white shadow-lg` : 'bg-slate-900 border-slate-700 text-slate-500 grayscale opacity-60 hover:grayscale-0 hover:opacity-100'}`}
-                                >
-                                    {prov.id}
-                                </button>
-                            ))}
+                            {SERVICE_PROVIDERS.map(prov => {
+                                const isSel = provider === prov.id;
+                                return (
+                                    <button
+                                        key={prov.id} onClick={() => setProvider(prov.id)}
+                                        className={`py-3 rounded-xl font-black text-xs transition-all active:scale-95 border-2 ${prov.bg} ${prov.text}
+                                            ${isSel ? 'border-white shadow-[0_0_15px_rgba(255,255,255,0.4)] scale-105' : 'border-transparent opacity-50 hover:opacity-90'}`}
+                                    >
+                                        {prov.id}
+                                    </button>
+                                );
+                            })}
                         </div>
                         <input 
-                            type="text" placeholder="Kod odbioru kuriera np. '67P'" value={pickupCode} onChange={e=>setPickupCode(e.target.value)}
+                            type="text" placeholder="Kod odbioru np. '67P'" value={pickupCode} onChange={e=>setPickupCode(e.target.value)}
                             className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-amber-400 font-black font-mono focus:border-amber-500 outline-none text-center tracking-widest uppercase" 
                         />
                     </div>
                 )}
 
-                {/* 5. BRAK */}
                 {selectedTab === 'Unassigned' && (
                     <div className="h-full flex items-center justify-center py-6 text-slate-600 text-xs font-mono font-bold uppercase tracking-widest">
                         Brak formy realizacji
@@ -144,7 +178,6 @@ export default function FulfillmentDock({ order, onSuccess }: FulfillmentDockPro
                 )}
             </div>
 
-            {/* STAŁY PRZYCISK ZAPISZ (Dotyczy tylko danych docka) */}
             <button
                 disabled={isProcessing}
                 onClick={handleSaveFulfillment}
